@@ -51,7 +51,10 @@ instalar_rsync(){
 	then
 		echo "Instalando rsync..."
 		paquete=`opkg list | grep rsync | grep tool | awk '{ print $1 }'`
-		opkg install $paquete
+		if [ ! -z "${paquete}" ];
+		then
+			opkg install $paquete
+		fi
 	fi
 }
 
@@ -91,11 +94,14 @@ reinicia_proceso() {
 enviar_telegram(){
 	PARAM=parametros.py
 	DESTINO=/usr/bin/junglebot
-	TOKEN=$(cat ${DESTINO}/parametros.py | grep BOT_TOKEN | cut -d'"' -f2 | tr -d '[[:space:]]')
-	ID=$(cat /usr/bin/junglebot/parametros.py | grep CHAT_ID | cut -d'=' -f2 | cut -d'#' -f1 | tr -d '[[:space:]]')
-	URL="https://api.telegram.org/bot$TOKEN/sendMessage"
-	MSJ=$MENSAJE
-	curl -s -X POST $URL -d chat_id=$ID -d text="$MSJ"
+	if [ -f $DESTINO/$PARAM ];
+	then
+		TOKEN=$(cat ${DESTINO}/parametros.py | grep BOT_TOKEN | cut -d'"' -f2 | tr -d '[[:space:]]')
+		ID=$(cat /usr/bin/junglebot/parametros.py | grep CHAT_ID | cut -d'=' -f2 | cut -d'#' -f1 | tr -d '[[:space:]]')
+		URL="https://api.telegram.org/bot$TOKEN/sendMessage"
+		MSJ=$MENSAJE
+		curl -s -X POST $URL -d chat_id=$ID -d text="$MSJ"
+	fi
 }
 
 borrado_canales() {
@@ -126,6 +132,7 @@ diferencias_canales() {
 		wget -qO - http://127.0.0.1/web/servicelistreload?mode=0
 		MENSAJE="Actualizacion automatica realizada sobre los canales ${CARPETA}"
 		enviar_telegram $MENSAJE
+		echo $MENSAJE
 	else
 		echo "CAMBIOS_RSYNC esta vacía"
 	fi
@@ -156,8 +163,38 @@ buscar_picons() {
 				then
 					echo "Existe ruta: ${RUTA_PICONS}"
 				else
-					RUTA_PICONS=""
 					echo "No existe ninguna ruta"
+					RUTA=/media/hdd
+					if [ -d "$RUTA" ];
+					then
+						RUTA_PICONS=${RUTA}/picon
+						mkdir -p ${RUTA_PICONS}
+						echo "Creada la ruta: ${RUTA_PICONS}"
+					else
+						RUTA=/media/usb
+						if [ -d "$RUTA" ];
+						then
+							RUTA_PICONS=${RUTA}/picon
+							mkdir -p ${RUTA_PICONS}
+							echo "Creada la ruta: ${RUTA_PICONS}"
+						else
+							RUTA=/media/mmc
+							if [ -d "$RUTA" ];
+							then
+								RUTA_PICONS=${RUTA}/picon
+								mkdir -p ${RUTA_PICONS}
+								echo "Creada la ruta: ${RUTA_PICONS}"
+							else
+								RUTA=/usr/share/enigma2
+								if [ -d "$RUTA" ];
+								then
+									RUTA_PICONS=${RUTA}/picon
+									mkdir -p ${RUTA_PICONS}
+									echo "Creada la ruta: ${RUTA_PICONS}"
+								fi
+							fi
+						fi
+					fi
 				fi
 			fi
 		fi
@@ -174,6 +211,7 @@ diferencias_picons() {
 	then
 		MENSAJE="Actualizacion automatica realizada sobre los picons ${RUTA_PICONS}"
 		enviar_telegram $MENSAJE
+		echo $MENSAJE
 	else
 		echo "CAMBIOS_RSYNC esta vacía"
 	fi
