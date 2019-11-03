@@ -2,7 +2,11 @@
 # Provides: jungle-team
 # Description: Script para actualizaciones de junglebot, de canales y de picons del equipo jungle-team
 # Version: 1.0
-# Date: 02/11/2019
+# Date: 03/11/2019
+
+LOGFILE=/tmp/enigma2_pre_start.log
+exec 1> $LOGFILE 2>&1
+set -x
 
 crear_dir_tmp() {
 	if [ ! -d $DIR_TMP/$CARPETA ] && [ ! $ZIP ];
@@ -46,15 +50,56 @@ diferencias_fichero() {
 	fi	  
 }
 
-instalar_rsync(){
+instalar_ipk(){
+	wget $URL_IPK -O $DIR_TMP/$FILE_IPK --no-check-certificate
+
+	if [ -f  $DIR_TMP/$FILE_IPK ]; 
+	then
+		echo "Instalando ipk $DIR_TMP/$FILE_IPK"
+		opkg install $DIR_TMP/$FILE_IPK
+	else
+		echo "No se ha podido descargar el fichero ipk: $DIR_TMP/$FILE_IPK"
+	fi
+}
+
+instalar_paquetes(){
 	if [ ! -f /usr/bin/rsync ];
 	then
-		echo "Instalando rsync..."
-		paquete=`opkg list | grep rsync | grep tool | awk '{ print $1 }'`
-		if [ ! -z "${paquete}" ];
+		if [ -f /etc/bhmachine ] || [ -f /etc/vtiversion.info ];
 		then
-			opkg install $paquete
-		fi
+			echo "instalando rsync en Blackhole/VTI..."
+			if [ 'uname -a | grep -i arm' != "" ]; 
+			then
+				echo "instalando rsync para ARM"
+				URL_IPK=https://github.com/jungla-team/rsync-enigma2/raw/master/enigma2_plugin_systemplugins_rsync_3.ipk
+				FILE_IPK=enigma2_plugin_systemplugins_rsync_3.ipk
+				instalar_ipk
+            else
+				echo "instalando rsync para MIPS"
+				URL_IPK=https://github.com/jungla-team/rsync-enigma2/raw/master/rsync_3.0.9-r0_mips32el.ipk
+				FILE_IPK=rsync_3.0.9-r0_mips32el.ipk
+				instalar_ipk
+			fi
+		else
+			echo "Instalando rsync..."
+			paquete=$(opkg list | grep rsync | grep tool | awk '{ print $1 }')
+			if [ ! -z "${paquete}" ];
+			then
+				opkg install $paquete
+			fi
+		fi	
+	fi
+	if [ ! -f /bin/bash ];
+	then
+		echo "Instalando bash..."
+		paquete="bash"
+		opkg install $paquete
+	fi
+	if [ ! -f /usr/bin/curl ];
+	then
+		echo "Instalando curl..."
+		paquete="curl"
+		opkg install $paquete
 	fi
 }
 
@@ -235,12 +280,12 @@ wget_github_zip() {
 		download=${out_file}/archive/master.zip
 		out_file=${out_file##*/}.zip
 	fi
-	wget -c ${download} -O ${out_file}
+	wget -c ${download} -O ${out_file} --no-check-certificate
 	mv ${out_file} $DIR_TMP
 }
 
 wget_github_file() {
-	wget $URL -O $DIR_TMP/$CARPETA/$FICHERO
+	wget $URL -O $DIR_TMP/$CARPETA/$FICHERO --no-check-certificate
 }
 
 limpiar_dir_tmp() {
@@ -256,7 +301,7 @@ limpiar_dir_tmp() {
 
 diff_github_actualizacion(){
 	actualizacion=$(cat ${FICHERO_ACTUALIZACION} 2>/dev/null)
-	instalada=$(curl -s ${URL_ACTUALIZACION} 2>/dev/null)
+	instalada=$(curl -k -s ${URL_ACTUALIZACION} 2>/dev/null)
 
 	if [ "$actualizacion" != "$instalada" ]; then
 		ACTUALIZACION="YES"
@@ -277,6 +322,7 @@ if [ -f /usr/bin/$CARPETA/$FICHERO ];
 then
 	crear_dir_tmp
 	wget_github_file
+	instalar_paquetes
 	diferencias_fichero
 	actualizar_fichero
 fi
@@ -300,7 +346,7 @@ then
 		wget_github_zip $URL
 		descomprimir_zip
 		renombrar_carpeta
-		instalar_rsync
+		instalar_paquetes
 		diferencias_canales
 	else
 		echo "No hay cambios en canales"
@@ -311,7 +357,7 @@ else
 	wget_github_zip $URL
 	descomprimir_zip
 	renombrar_carpeta
-	instalar_rsync
+	instalar_paquetes
 	diferencias_canales
 fi
 
@@ -336,6 +382,7 @@ then
 			wget_github_zip $URL
 			descomprimir_zip
 			renombrar_carpeta
+			instalar_paquetes
 			diferencias_picons
 		else
 			echo "No hay cambios en picons"
@@ -346,6 +393,7 @@ then
 		wget_github_zip $URL
 		descomprimir_zip
 		renombrar_carpeta
+		instalar_paquetes
 		diferencias_picons
 	fi
 else
