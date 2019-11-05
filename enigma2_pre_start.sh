@@ -2,7 +2,7 @@
 # Provides: jungle-team
 # Description: Script para actualizaciones de junglebot, de canales y de picons del equipo jungle-team
 # Version: 1.0
-# Date: 03/11/2019
+# Date: 05/11/2019
 
 LOGFILE=/tmp/enigma2_pre_start.log
 exec 1> $LOGFILE 2>&1
@@ -109,6 +109,7 @@ actualizar_fichero() {
 		matar_procesos
 		cp $DIR_TMP/$CARPETA/$FICHERO $DESTINO/$FICHERO
 		chmod +x $DESTINO/$FICHERO
+		rm -f $DESTINO/parametros.pyo
 		reinicia_proceso
 		MENSAJE="Actualizacion automatica realizada sobre el bot de jungla-team"
 		enviar_telegram $MENSAJE
