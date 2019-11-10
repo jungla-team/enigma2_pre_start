@@ -2,7 +2,7 @@
 # Provides: jungle-team
 # Description: Script para actualizaciones de junglebot, de canales y de picons del equipo jungle-team
 # Version: 1.0
-# Date: 05/11/2019
+# Date: 10/11/2019
 
 LOGFILE=/tmp/enigma2_pre_start.log
 exec 1> $LOGFILE 2>&1
@@ -112,7 +112,7 @@ actualizar_fichero() {
 		rm -f $DESTINO/parametros.pyo
 		reinicia_proceso
 		MENSAJE="Actualizacion automatica realizada sobre el bot de jungla-team"
-		enviar_telegram $MENSAJE
+		enviar_telegram
 	fi
 }
 
@@ -150,9 +150,19 @@ enviar_telegram(){
 	fi
 }
 
+enviar_mensaje_pantalla(){
+	MSJ=$(echo ${MENSAJE// /+})
+	URL="http://127.0.0.1/web/message?text=${MSJ}&type=2"
+	wget -qO - $URL
+}
+
 borrado_canales() {
 	DESTINO=/etc/enigma2
 	ls *.tv *.radio lamedb blacklist whitelist satellites.xml | grep -v favourites | xargs rm
+}
+
+recargar_lista_canales() {
+	wget -qO - http://127.0.0.1/web/servicelistreload?mode=0
 }
 
 diferencias_canales() {
@@ -175,9 +185,10 @@ diferencias_canales() {
 	CAMBIOS_RSYNC=$(grep -i "+++++++++" $DIR_TMP/$LOG_RSYNC_CANALES)
 	if [ ! -z "${CAMBIOS_RSYNC}" ];
 	then
-		wget -qO - http://127.0.0.1/web/servicelistreload?mode=0
+		recargar_lista_canales
 		MENSAJE="Actualizacion automatica realizada sobre los canales ${CARPETA}"
-		enviar_telegram $MENSAJE
+		enviar_telegram
+		enviar_mensaje_pantalla
 		echo $MENSAJE
 	else
 		echo "CAMBIOS_RSYNC esta vacía"
@@ -256,7 +267,7 @@ diferencias_picons() {
 	if [ ! -z "${CAMBIOS_RSYNC}" ];
 	then
 		MENSAJE="Actualizacion automatica realizada sobre los picons ${RUTA_PICONS}"
-		enviar_telegram $MENSAJE
+		enviar_telegram
 		echo $MENSAJE
 	else
 		echo "CAMBIOS_RSYNC esta vacía"
