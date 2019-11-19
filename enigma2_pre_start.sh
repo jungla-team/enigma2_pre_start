@@ -2,7 +2,7 @@
 # Provides: jungle-team
 # Description: Script para actualizaciones de junglebot, de canales y de picons del equipo jungle-team
 # Version: 1.0
-# Date: 10/11/2019
+# Date: 19/11/2019
 
 LOGFILE=/tmp/enigma2_pre_start.log
 exec 1> $LOGFILE 2>&1
@@ -56,6 +56,7 @@ instalar_ipk(){
 	if [ -f  $DIR_TMP/$FILE_IPK ]; 
 	then
 		echo "Instalando ipk $DIR_TMP/$FILE_IPK"
+		opkg update
 		opkg install $DIR_TMP/$FILE_IPK
 	else
 		echo "No se ha podido descargar el fichero ipk: $DIR_TMP/$FILE_IPK"
@@ -85,6 +86,7 @@ instalar_paquetes(){
 			paquete=$(opkg list | grep rsync | grep tool | awk '{ print $1 }')
 			if [ ! -z "${paquete}" ];
 			then
+				opkg update
 				opkg install $paquete
 			fi
 		fi	
@@ -93,12 +95,14 @@ instalar_paquetes(){
 	then
 		echo "Instalando bash..."
 		paquete="bash"
+		opkg update
 		opkg install $paquete
 	fi
 	if [ ! -f /usr/bin/curl ];
 	then
 		echo "Instalando curl..."
 		paquete="curl"
+		opkg update
 		opkg install $paquete
 	fi
 }
@@ -168,7 +172,7 @@ recargar_lista_canales() {
 diferencias_canales() {
 	DESTINO=/etc/enigma2
 	LOG_RSYNC_CANALES=rsync_canales.log
-	if [ ! -f $DESTINO/streamTDT.tv ]; 
+	if [ -f $DESTINO/streamTDT.tv ]; 
 	then
 		borrado_canales
 		EXCLUDE_FILES=$(echo -e "README.md\nLICENSE\nstreamTDT.tv\nsatellites.xml" > $DIR_TMP/excludes.txt)
