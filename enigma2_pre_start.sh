@@ -2,7 +2,7 @@
 # Provides: jungle-team
 # Description: Script para actualizaciones de junglebot, de canales y de picons del equipo jungle-team
 # Version: 1.0
-# Date: 19/11/2019
+# Date: 19/12/2019
 
 LOGFILE=/tmp/enigma2_pre_start.log
 exec 1> $LOGFILE 2>&1
@@ -278,6 +278,22 @@ diferencias_picons() {
 	fi
 }
 
+redimensionamiento_picons() {
+	if [ -f /etc/bhmachine ];
+	then
+		echo "Redimendionsando picons en sistema Blackhole"
+		opkg update
+		opkg install python-imaging
+		URL=https://raw.githubusercontent.com/jungla-team/resize_picons/master/resizepicon.py
+		CARPETA=/usr/bin/
+		FICHERO=resizepicon.py
+		wget $URL -O $CARPETA/$FICHERO --no-check-certificate
+		python $CARPETA/$FICHERO $RUTA_PICONS
+		enviar_telegram
+		echo $MENSAJE
+    fi
+}
+
 wget_github_zip() {
 	if [[ $1 =~ ^-+h(elp)?$ ]] ; then
 		printf "%s\n" "Downloads a github snapshot of a master branch.\nSupports input URLs of the forms */repo_name, *.git, and */master.zip"
@@ -326,6 +342,49 @@ diff_github_actualizacion(){
 	fi
 }
 
+merge_lamedb() {
+	if grep -q "eeee0000:" "$DESTINO/lamedb";
+	then
+		echo "Tiene TDT"
+		((nlinea = 99999))
+		while IFS= read -r line; do
+			if [[ $line == *"eeee0000:"* ]]; then
+				((nlinea = 1))
+				if [[ $line == "eeee0000:"* ]]; then
+					TIPO=TRANSPONDER
+				else
+					TIPO=SERVICE
+				fi
+			else
+				((nlinea++))
+			fi
+			
+			if (( nlinea < 4 )); then 
+				if [[ $TIPO == "TRANSPONDER" ]]; then
+					echo "$line"  >> "$DIR_TMP/$CARPETA/lamedb_tdt_transponders"
+				else
+					echo "$line"  >> "$DIR_TMP/$CARPETA/lamedb_tdt_services"
+				fi
+			fi			
+		done < "$DESTINO/lamedb"
+
+		while IFS= read -r line; do
+			echo "$line"  >> "$DIR_TMP/$CARPETA/lamedb_final"
+			if [[ $line == "transponders"* ]]; then
+				cat "$DIR_TMP/$CARPETA/lamedb_tdt_transponders" >> "$DIR_TMP/$CARPETA/lamedb_final"
+			elif [[ $line == "services"* ]]; then
+				cat "$DIR_TMP/$CARPETA/lamedb_tdt_services" >> "$DIR_TMP/$CARPETA/lamedb_final"
+			fi
+		done < "$DIR_TMP/$CARPETA/lamedb"
+		rm "$DIR_TMP/$CARPETA/lamedb_tdt_transponders"
+		rm "$DIR_TMP/$CARPETA/lamedb_tdt_services"
+		mv -f "$DIR_TMP/$CARPETA/lamedb_final" "$DIR_TMP/$CARPETA/lamedb"
+		rm -f "$DESTINO/lamedb_final"
+	else
+		echo "No tiene TDT"
+	fi
+}
+
 #### Para actualizar junglebot #####
 
 URL=https://raw.githubusercontent.com/jungla-team/junglebot/master/bot.py
@@ -362,6 +421,7 @@ then
 		wget_github_zip $URL
 		descomprimir_zip
 		renombrar_carpeta
+		merge_lamedb
 		instalar_paquetes
 		diferencias_canales
 	else
@@ -400,6 +460,7 @@ then
 			renombrar_carpeta
 			instalar_paquetes
 			diferencias_picons
+			redimensionamiento_picons
 		else
 			echo "No hay cambios en picons"
 		fi
@@ -411,6 +472,7 @@ then
 		renombrar_carpeta
 		instalar_paquetes
 		diferencias_picons
+		redimensionamiento_picons
 	fi
 else
 	echo "No existe ninguna ruta con picons, asi que no actualizo"
