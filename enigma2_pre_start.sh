@@ -2,7 +2,7 @@
 # Provides: jungle-team
 # Description: Script para actualizaciones de junglebot, de canales y de picons del equipo jungle-team
 # Version: 1.0
-# Date: 19/12/2019
+# Date: 24/12/2019
 
 LOGFILE=/tmp/enigma2_pre_start.log
 exec 1> $LOGFILE 2>&1
@@ -69,7 +69,8 @@ instalar_paquetes(){
 		if [ -f /etc/bhmachine ] || [ -f /etc/vtiversion.info ];
 		then
 			echo "instalando rsync en Blackhole/VTI..."
-			if [ 'uname -a | grep -i arm' != "" ]; 
+			arm=$(uname -a | grep -i arm)
+			if [ "$arm" ]; 
 			then
 				echo "instalando rsync para ARM"
 				URL_IPK=https://github.com/jungla-team/rsync-enigma2/raw/master/enigma2_plugin_systemplugins_rsync_3.ipk
@@ -378,8 +379,8 @@ merge_lamedb() {
 		done < "$DIR_TMP/$CARPETA/lamedb"
 		rm "$DIR_TMP/$CARPETA/lamedb_tdt_transponders"
 		rm "$DIR_TMP/$CARPETA/lamedb_tdt_services"
-		mv -f "$DIR_TMP/$CARPETA/lamedb_final" "$DIR_TMP/$CARPETA/lamedb"
-		rm -f "$DESTINO/lamedb_final"
+		#mv -f "$DIR_TMP/$CARPETA/lamedb_final" "$DIR_TMP/$CARPETA/lamedb"
+		echo "Ya se ha regenerado lamedb con los canales de TDT anteriores"
 	else
 		echo "No tiene TDT"
 	fi
