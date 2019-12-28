@@ -1,6 +1,6 @@
 # enigma2_pre_start
 
-https://jungle-team.com/junglescript-1-0-lista-canales-y-picon-enigma2-movistar/
+https://jungle-team.com/junglescript-lista-canales-y-picon-enigma2-movistar/
 
 Se usa este script para actualizaciones del bot, de canales y de picons del proyecto de jungle-team.
 
