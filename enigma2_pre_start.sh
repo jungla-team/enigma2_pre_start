@@ -1,8 +1,8 @@
 #!/bin/bash
 # Provides: jungle-team
-# Description: Script para actualizaciones de junglebot, de canales y de picons del equipo jungle-team
-# Version: 1.0
-# Date: 24/12/2019
+# Description: JungleScript para actualizaciones de junglebot, de canales y de picons del equipo jungle-team
+# Version: 2.0
+# Date: 28/12/2019
 
 LOGFILE=/tmp/enigma2_pre_start.log
 exec 1> $LOGFILE 2>&1
@@ -11,7 +11,10 @@ set -x
 crear_dir_tmp() {
 	if [ ! -d $DIR_TMP/$CARPETA ] && [ ! $ZIP ];
 	then
+		echo "creando carpeta $DIR_TMP/$CARPETA"
 		mkdir -p $DIR_TMP/$CARPETA
+	else
+		echo "no crea la carpeta temporal $DIR_TMP/$CARPETA"
 	fi
 }
 
@@ -108,62 +111,104 @@ instalar_paquetes(){
 	fi
 }
 
-actualizar_fichero() {
+actualizar_fichero_bot() {
 	if [ "$CAMBIOS" -eq 1 ]
 	then
-		matar_procesos
+		parar_proceso $DAEMON "junglebot"
 		cp $DIR_TMP/$CARPETA/$FICHERO $DESTINO/$FICHERO
 		chmod +x $DESTINO/$FICHERO
 		rm -f $DESTINO/parametros.pyo
-		reinicia_proceso
+		arranca_proceso $DAEMON "junglebot"
 		MENSAJE="Actualizacion automatica realizada sobre el bot de jungla-team"
-		enviar_telegram
+		enviar_telegram "${MENSAJE}"
 	fi
 }
 
-matar_procesos() {
-	PROCESO=`ps -ef | grep ${DAEMON} | grep -v grep | wc -l`
-	if [ "$PROCESO" -gt 0 ]
-	then
-		procesos=`ps -ef | grep ${DAEMON} | grep -v grep | awk '{ print $2 }'`
-		for i in $procesos;
-		do
-			kill -9 $i
-		done
-	fi
-}
-
-reinicia_proceso() {
+actualizar_fichero_junglescript() {
 	if [ "$CAMBIOS" -eq 1 ]
 	then
-		echo "Reiniciando proceso..."
-		matar_procesos
-		$DAEMON &
+		MENSAJE="Actualizacion automatica realizada sobre jungleScript"
+		enviar_telegram "${MENSAJE}"
+		cp $DIR_TMP/$CARPETA/$FICHERO $DESTINO/$FICHERO
+	fi
+}
+
+parar_proceso() {
+    DEMONIO=$1
+	PIDFILE_NAME=$2
+	PROCESO=`ps -ef | grep ${DEMONIO} | grep -v grep | wc -l`
+	if [ "$PROCESO" -gt 0 ]
+	then
+		PIDFILE="/var/run/${PIDFILE_NAME}.pid"
+		PIDFILE_NUMBER=$(cat ${PIDFILE})
+		if [ "$PIDFILE_NUMBER" ];
+		then
+			INIT=$(ls /sbin/start-stop-daemon)
+			if [ -f $INIT ];
+			then
+				$INIT -K -p $PIDFILE
+				rm -f $PIDFILE
+			else
+				procesos=`ps -ef | grep ${DEMONIO} | grep -v grep | awk '{ print $2 }'`
+				for i in $procesos;
+				do
+					kill -9 $i
+				done
+		    fi
+		else
+			procesos=`ps -ef | grep ${DEMONIO} | grep -v grep | awk '{ print $2 }'`
+			for i in $procesos;
+			do
+				kill -9 $i
+			done
+		fi
+	fi
+}
+
+arranca_proceso() {
+	DEMONIO=$1
+	PIDFILE_NAME=$2
+	PIDFILE="/var/run/${PIDFILE_NAME}.pid"
+	PROCESO=`ps -ef | grep ${DEMONIO} | grep -v grep | wc -l`
+	if [ "$PROCESO" -eq 0 ]
+	then
+		INIT=$(ls /sbin/start-stop-daemon)
+		if [ -f $INIT ];
+		then
+			$INIT -S -b -x $DEMONIO -p $PIDFILE -m
+		else
+			$DEMONIO
+		fi
+	else
+		echo "Hay procesos levantados $DEMONIO"
 	fi
 }
 
 enviar_telegram(){
 	PARAM=parametros.py
-	DESTINO=/usr/bin/junglebot
-	if [ -f $DESTINO/$PARAM ];
+	DEST=/usr/bin/junglebot
+	if [ -f $DEST/$PARAM ];
 	then
-		TOKEN=$(cat ${DESTINO}/parametros.py | grep BOT_TOKEN | cut -d'"' -f2 | tr -d '[[:space:]]')
-		ID=$(cat /usr/bin/junglebot/parametros.py | grep CHAT_ID | cut -d'=' -f2 | cut -d'#' -f1 | tr -d '[[:space:]]')
+		TOKEN=$(cat ${DEST}/parametros.py | grep BOT_TOKEN | cut -d'"' -f2 | tr -d '[[:space:]]')
+		ID=$(cat ${DEST}/parametros.py | grep CHAT_ID | cut -d'=' -f2 | cut -d'#' -f1 | tr -d '[[:space:]]')
 		URL="https://api.telegram.org/bot$TOKEN/sendMessage"
-		MSJ=$MENSAJE
+		MSJ=$1
 		curl -s -X POST $URL -d chat_id=$ID -d text="$MSJ"
+	else
+		echo "No puedo enviar mensajes de telegram, ya que el bot no esta activo"
 	fi
 }
 
 enviar_mensaje_pantalla(){
-	MSJ=$(echo ${MENSAJE// /+})
+    MENSA=$1
+	MSJ=$(echo ${MENSA// /+})
 	URL="http://127.0.0.1/web/message?text=${MSJ}&type=2"
 	wget -qO - $URL
 }
 
 borrado_canales() {
 	DESTINO=/etc/enigma2
-	ls *.tv *.radio lamedb blacklist whitelist satellites.xml | grep -v favourites | xargs rm
+	ls $DESTINO/*.tv $DESTINO/*.radio $DESTINO/lamedb $DESTINO/blacklist $DESTINO/whitelist $DESTINO/satellites.xml | xargs rm
 }
 
 recargar_lista_canales() {
@@ -182,7 +227,6 @@ diferencias_canales() {
 		borrado_canales
 		EXCLUDE_FILES=$(echo -e "README.md\nLICENSE\nsatellites.xml" > $DIR_TMP/excludes.txt)
 		rsync -aiv $DIR_TMP/$CARPETA/* $DESTINO --exclude-from=$DIR_TMP/excludes.txt --log-file=$DIR_TMP/$LOG_RSYNC_CANALES
-		###gestionar tema lamedb
 	fi
 	FICH_SAT=satellites.xml
 	RUTA_SAT=/etc/tuxbox
@@ -192,8 +236,8 @@ diferencias_canales() {
 	then
 		recargar_lista_canales
 		MENSAJE="Actualizacion automatica realizada sobre los canales ${CARPETA}"
-		enviar_telegram
-		enviar_mensaje_pantalla
+		enviar_telegram "${MENSAJE}"
+		enviar_mensaje_pantalla "${MENSAJE}"
 		echo $MENSAJE
 	else
 		echo "CAMBIOS_RSYNC esta vacía"
@@ -272,7 +316,7 @@ diferencias_picons() {
 	if [ ! -z "${CAMBIOS_RSYNC}" ];
 	then
 		MENSAJE="Actualizacion automatica realizada sobre los picons ${RUTA_PICONS}"
-		enviar_telegram
+		enviar_telegram "${MENSAJE}"
 		echo $MENSAJE
 	else
 		echo "CAMBIOS_RSYNC esta vacía"
@@ -290,8 +334,8 @@ redimensionamiento_picons() {
 		FICHERO=resizepicon.py
 		wget $URL -O $CARPETA/$FICHERO --no-check-certificate
 		python $CARPETA/$FICHERO $RUTA_PICONS
-		enviar_telegram
-		echo $MENSAJE
+		MENSAJE="Se han redimensionado los picons en sistema Blackhole"
+		enviar_telegram "${MENSAJE}"
     fi
 }
 
@@ -319,6 +363,7 @@ wget_github_zip() {
 
 wget_github_file() {
 	wget $URL -O $DIR_TMP/$CARPETA/$FICHERO --no-check-certificate
+	chmod +x $DIR_TMP/$CARPETA/$FICHERO
 }
 
 limpiar_dir_tmp() {
@@ -393,14 +438,15 @@ CARPETA=junglebot
 DESTINO=/usr/bin/$CARPETA
 FICHERO=bot.py
 DAEMON=$DESTINO/$FICHERO
+DIR_TMP=/tmp
 
-if [ -f /usr/bin/$CARPETA/$FICHERO ];
+if [ -f $DESTINO/$FICHERO ];
 then
 	crear_dir_tmp
 	wget_github_file
 	instalar_paquetes
 	diferencias_fichero
-	actualizar_fichero
+	actualizar_fichero_bot
 fi
 
 #### Para actualizar lista de canales #####
@@ -479,6 +525,24 @@ else
 	echo "No existe ninguna ruta con picons, asi que no actualizo"
 fi
 
+#### Para actualizar junglescript #####
+
+URL=https://raw.githubusercontent.com/jungla-team/enigma2_pre_start/master/enigma2_pre_start.sh
+CARPETA=junglescript
+DESTINO=/usr/bin
+FICHERO=enigma2_pre_start.sh
+DAEMON=$DESTINO/$FICHERO
+DIR_TMP=/tmp
+unset ZIP
+
+if [ -f $DESTINO/$FICHERO ];
+then
+	crear_dir_tmp
+	wget_github_file
+	instalar_paquetes
+	diferencias_fichero
+fi
+
 #### Limpieza en DIR_TMP
 
 if [ ! -z "${DIR_TMP}" ];
@@ -486,3 +550,7 @@ then
 	echo "Limpiando ${DIR_TMP}"
 	limpiar_dir_tmp
 fi
+
+#### Como ultima instruccion meto la propia actualizacion de JungleScript
+
+actualizar_fichero_junglescript
