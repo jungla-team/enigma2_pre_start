@@ -424,7 +424,7 @@ merge_lamedb() {
 		done < "$DIR_TMP/$CARPETA/lamedb"
 		rm "$DIR_TMP/$CARPETA/lamedb_tdt_transponders"
 		rm "$DIR_TMP/$CARPETA/lamedb_tdt_services"
-		#mv -f "$DIR_TMP/$CARPETA/lamedb_final" "$DIR_TMP/$CARPETA/lamedb"
+		mv -f "$DIR_TMP/$CARPETA/lamedb_final" "$DIR_TMP/$CARPETA/lamedb"
 		echo "Ya se ha regenerado lamedb con los canales de TDT anteriores"
 	else
 		echo "No tiene TDT"
