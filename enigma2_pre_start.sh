@@ -1,8 +1,8 @@
 #!/bin/bash
 # Provides: jungle-team
 # Description: JungleScript para actualizaciones de junglebot, de canales y de picons del equipo jungle-team
-# Version: 2.0
-# Date: 28/12/2019
+# Version: 2.1
+# Date: 03/01/2020 
 
 LOGFILE=/tmp/enigma2_pre_start.log
 exec 1> $LOGFILE 2>&1
@@ -121,6 +121,8 @@ actualizar_fichero_bot() {
 		arranca_proceso $DAEMON "junglebot"
 		MENSAJE="Actualizacion automatica realizada sobre el bot de jungla-team"
 		enviar_telegram "${MENSAJE}"
+	else
+		echo "No hay cambios en el bot"
 	fi
 }
 
@@ -208,7 +210,25 @@ enviar_mensaje_pantalla(){
 
 borrado_canales() {
 	DESTINO=/etc/enigma2
-	ls $DESTINO/*.tv $DESTINO/*.radio $DESTINO/lamedb $DESTINO/blacklist $DESTINO/whitelist $DESTINO/satellites.xml | xargs rm
+	HAY_FAV_TDT=$(grep -il ee0000 ${DESTINO}/*.tv | wc -l)
+	EXCLUDE_FAV_TDT=exclude_fav_tdt.txt
+	if [ "$HAY_FAV_TDT" -gt 0 ];
+	then
+		for i in $(ls ${DESTINO}/*.tv);
+		do
+			BOUQUET_FILE=$i
+			EXCLUIR_FAV_TDT=$(grep -il ee0000 ${BOUQUET_FILE} | wc -l)
+			if [ "$EXCLUIR_FAV_TDT" -eq 0 ];
+			then
+				rm -f $BOUQUET_FILE
+			else
+				BOUQUET_NAME=$(echo ${BOUQUET_FILE} | cut -d'/' -f4)
+				echo $BOUQUET_NAME >> $DIR_TMP/$EXCLUDE_FAV_TDT
+			fi
+		done
+	else
+		ls $DESTINO/*.tv $DESTINO/*.radio $DESTINO/lamedb $DESTINO/blacklist $DESTINO/whitelist $DESTINO/satellites.xml | xargs rm
+	fi
 }
 
 recargar_lista_canales() {
@@ -231,6 +251,13 @@ diferencias_canales() {
 	FICH_SAT=satellites.xml
 	RUTA_SAT=/etc/tuxbox
 	rsync -aiv $DIR_TMP/$CARPETA/$FICH_SAT $RUTA_SAT/$FICH_SAT --log-file=$DIR_TMP/$LOG_RSYNC_CANALES
+	if [ -f $DIR_TMP/$EXCLUDE_FAV_TDT ];
+	then
+		for i in $(cat ${DIR_TMP}/${EXCLUDE_FAV_TDT});
+		do
+			echo '#SERVICE 1:7:1:0:0:0:0:0:0:0:FROM BOUQUET "'${i}'" ORDER BY bouquet' >> $DESTINO/bouquets.tv
+		done
+	fi
 	CAMBIOS_RSYNC=$(grep -i "+++++++++" $DIR_TMP/$LOG_RSYNC_CANALES)
 	if [ ! -z "${CAMBIOS_RSYNC}" ];
 	then
@@ -247,19 +274,22 @@ diferencias_canales() {
 buscar_picons() {
 	RUTA_PICONS=/media/hdd/picon
 	HAY_PICONS=$(ls -ld $RUTA_PICONS | wc -l)
-	if [ "$HAY_PICONS" -gt 0 ];
+	HDD_MONTADO=$(mount | grep hdd | wc -l)
+	if [ "$HAY_PICONS" -gt 0 ] && [ "$HDD_MONTADO" -gt 0 ];
 	then
 		echo "Existe ruta: ${RUTA_PICONS}"
 	else
 		RUTA_PICONS=/media/usb/picon
 		HAY_PICONS=$(ls -ld $RUTA_PICONS | wc -l)
-		if [ "$HAY_PICONS" -gt 0 ];
+		USB_MONTADO=$(mount | grep usb | wc -l)
+		if [ "$HAY_PICONS" -gt 0 ] && [ "$USB_MONTADO" -gt 0 ];
 		then
 			echo "Existe ruta: ${RUTA_PICONS}"
 		else
 			RUTA_PICONS=/media/mmc/picon
 			HAY_PICONS=$(ls -ld $RUTA_PICONS | wc -l)
-			if [ "$HAY_PICONS" -gt 0 ];
+			MMC_MONTADO=$(mount | grep mmc | wc -l)
+			if [ "$HAY_PICONS" -gt 0 ] && [ "$MMC_MONTADO" -gt 0 ];
 			then
 				echo "Existe ruta: ${RUTA_PICONS}"
 			else
@@ -271,21 +301,24 @@ buscar_picons() {
 				else
 					echo "No existe ninguna ruta"
 					RUTA=/media/hdd
-					if [ -d "$RUTA" ];
+					HDD_MONTADO=$(mount | grep hdd | wc -l)
+					if [ -d "$RUTA" ] && [ "$HDD_MONTADO" -gt 0 ];
 					then
 						RUTA_PICONS=${RUTA}/picon
 						mkdir -p ${RUTA_PICONS}
 						echo "Creada la ruta: ${RUTA_PICONS}"
 					else
 						RUTA=/media/usb
-						if [ -d "$RUTA" ];
+						USB_MONTADO=$(mount | grep usb | wc -l)
+						if [ -d "$RUTA" ] && [ "$USB_MONTADO" -gt 0 ];
 						then
 							RUTA_PICONS=${RUTA}/picon
 							mkdir -p ${RUTA_PICONS}
 							echo "Creada la ruta: ${RUTA_PICONS}"
 						else
 							RUTA=/media/mmc
-							if [ -d "$RUTA" ];
+							MMC_MONTADO=$(mount | grep mmc | wc -l)
+							if [ -d "$RUTA" ] && [ "$MMC_MONTADO" -gt 0 ];
 							then
 								RUTA_PICONS=${RUTA}/picon
 								mkdir -p ${RUTA_PICONS}
@@ -374,6 +407,7 @@ limpiar_dir_tmp() {
 		rm -rf "${DIR_TMP}/picon-movistar"
 		rm -f "${DIR_TMP}/MovistarPlus-Astra.zip"
 		rm -f "${DIR_TMP}/picon-movistar.zip"
+		rm -f "${DIR_TMP}/exclude_fav_tdt.txt"
 	fi
 }
 
@@ -447,6 +481,8 @@ then
 	instalar_paquetes
 	diferencias_fichero
 	actualizar_fichero_bot
+else
+	echo "El bot no esta instalado asi que no hago nada"
 fi
 
 #### Para actualizar lista de canales #####
@@ -480,6 +516,7 @@ else
 	wget_github_zip $URL
 	descomprimir_zip
 	renombrar_carpeta
+	merge_lamedb
 	instalar_paquetes
 	diferencias_canales
 fi
