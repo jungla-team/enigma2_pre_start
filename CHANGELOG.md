@@ -1,5 +1,11 @@
 # Changelog
 
+## [2.1] - 2020-01-03
+
+- Arreglado bug con creación de picons en la ruta /media/hdd
+- Añadido mezclado de canales tdt cuando se realiza la instalación de canales por primera vez
+- Añadida funcionalidad para no borrar bouquets que tengan favoritos TDT
+    
 ## [2.0] - 2019-12-28
 
 - Auto-actualización del script junglescript (enigma2_pre_start.sh)
