@@ -444,7 +444,8 @@ limpiar_dir_tmp() {
 		rm -rf "${DIR_TMP}/picon-movistar"
 		rm -f "${DIR_TMP}/MovistarPlus-Astra.zip"
 		rm -f "${DIR_TMP}/picon-movistar.zip"
-		rm -f "${DIR_TMP}/exclude_fav_tdt.txt"
+		rm -f "${DIR_TMP}/exclude_fav.txt"
+		rm -f "${DIR_TMP}/exclude.txt"
 	fi
 }
 
