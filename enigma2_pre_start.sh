@@ -460,6 +460,7 @@ diff_github_actualizacion(){
 }
 
 merge_lamedb() {
+	DESTINO=/etc/enigma2
 	if grep -q "eeee0000:" "$DESTINO/lamedb";
 	then
 		echo "Tiene TDT"
