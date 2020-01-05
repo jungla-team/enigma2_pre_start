@@ -1,8 +1,8 @@
 #!/bin/bash
 # Provides: jungle-team
 # Description: JungleScript para actualizaciones de junglebot, de canales y de picons del equipo jungle-team
-# Version: 2.1
-# Date: 03/01/2020 
+# Version: 2.2
+# Date: 05/01/2020 
 
 LOGFILE=/tmp/enigma2_pre_start.log
 exec 1> $LOGFILE 2>&1
@@ -211,21 +211,40 @@ enviar_mensaje_pantalla(){
 borrado_canales() {
 	DESTINO=/etc/enigma2
 	HAY_FAV_TDT=$(grep -il ee0000 ${DESTINO}/*.tv | wc -l)
-	EXCLUDE_FAV_TDT=exclude_fav_tdt.txt
-	if [ "$HAY_FAV_TDT" -gt 0 ];
+	HAY_FAV_IPTV=$(grep -il http ${DESTINO}/*.tv | grep -v streamTDT.tv | wc -l)
+	EXCLUDE_FAV=exclude_fav.txt
+	if [ "$HAY_FAV_TDT" -gt 0 ] || [ "$HAY_FAV_IPTV" -gt 0 ];
 	then
-		for i in $(ls ${DESTINO}/*.tv);
-		do
-			BOUQUET_FILE=$i
-			EXCLUIR_FAV_TDT=$(grep -il ee0000 ${BOUQUET_FILE} | wc -l)
-			if [ "$EXCLUIR_FAV_TDT" -eq 0 ];
-			then
-				rm -f $BOUQUET_FILE
-			else
-				BOUQUET_NAME=$(echo ${BOUQUET_FILE} | cut -d'/' -f4)
-				echo $BOUQUET_NAME >> $DIR_TMP/$EXCLUDE_FAV_TDT
-			fi
-		done
+		if [ "$HAY_FAV_TDT" -gt 0 ];
+		then
+			for i in $(ls ${DESTINO}/*.tv);
+			do
+				BOUQUET_FILE=$i
+				EXCLUIR_FAV=$(grep -il ee0000 ${BOUQUET_FILE} | wc -l)
+				if [ "$EXCLUIR_FAV_TDT" -eq 0 ];
+				then
+					rm -f $BOUQUET_FILE
+				else
+					BOUQUET_NAME=$(echo ${BOUQUET_FILE} | cut -d'/' -f4)
+					echo $BOUQUET_NAME >> $DIR_TMP/$EXCLUDE_FAV
+				fi
+			done
+		fi
+		if [ "$HAY_FAV_IPTV" -gt 0 ];
+		then
+			for i in $(ls ${DESTINO}/*.tv | grep -v streamTDT.tv);
+			do
+				BOUQUET_FILE=$i
+				EXCLUIR_FAV=$(grep -il http ${BOUQUET_FILE} | wc -l)
+				if [ "$EXCLUIR_FAV" -eq 0 ];
+				then
+					rm -f $BOUQUET_FILE
+				else
+					BOUQUET_NAME=$(echo ${BOUQUET_FILE} | cut -d'/' -f4)
+					echo $BOUQUET_NAME >> $DIR_TMP/$EXCLUDE_FAV
+				fi
+			done
+		fi
 	else
 		ls $DESTINO/*.tv $DESTINO/*.radio $DESTINO/lamedb $DESTINO/blacklist $DESTINO/whitelist $DESTINO/satellites.xml | xargs rm
 	fi
@@ -251,9 +270,9 @@ diferencias_canales() {
 	FICH_SAT=satellites.xml
 	RUTA_SAT=/etc/tuxbox
 	rsync -aiv $DIR_TMP/$CARPETA/$FICH_SAT $RUTA_SAT/$FICH_SAT --log-file=$DIR_TMP/$LOG_RSYNC_CANALES
-	if [ -f $DIR_TMP/$EXCLUDE_FAV_TDT ];
+	if [ -f $DIR_TMP/$EXCLUDE_FAV ];
 	then
-		for i in $(cat ${DIR_TMP}/${EXCLUDE_FAV_TDT});
+		for i in $(cat ${DIR_TMP}/${EXCLUDE_FAV});
 		do
 			echo '#SERVICE 1:7:1:0:0:0:0:0:0:0:FROM BOUQUET "'${i}'" ORDER BY bouquet' >> $DESTINO/bouquets.tv
 		done
@@ -366,9 +385,15 @@ redimensionamiento_picons() {
 		CARPETA=/usr/bin/
 		FICHERO=resizepicon.py
 		wget $URL -O $CARPETA/$FICHERO --no-check-certificate
-		python $CARPETA/$FICHERO $RUTA_PICONS
-		MENSAJE="Se han redimensionado los picons en sistema Blackhole"
-		enviar_telegram "${MENSAJE}"
+		if [ $? -eq 0 ];
+		then
+			python $CARPETA/$FICHERO $RUTA_PICONS
+			MENSAJE="Se han redimensionado los picons en sistema Blackhole"
+			enviar_telegram "${MENSAJE}"
+		else
+			echo "Errores al descargar $URL"
+			exit 1
+		fi
     fi
 }
 
@@ -391,12 +416,24 @@ wget_github_zip() {
 		out_file=${out_file##*/}.zip
 	fi
 	wget -c ${download} -O ${out_file} --no-check-certificate
-	mv ${out_file} $DIR_TMP
+	if [ $? -eq 0 ];
+	then
+		mv ${out_file} $DIR_TMP
+	else
+		echo "Errores al descargar $download"
+		exit 1
+	fi
 }
 
 wget_github_file() {
 	wget $URL -O $DIR_TMP/$CARPETA/$FICHERO --no-check-certificate
-	chmod +x $DIR_TMP/$CARPETA/$FICHERO
+	if [ $? -eq 0 ];
+	then
+		chmod +x $DIR_TMP/$CARPETA/$FICHERO
+	else
+		echo "Errores al descargar $URL"
+		exit 1
+	fi
 }
 
 limpiar_dir_tmp() {
