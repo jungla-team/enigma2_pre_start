@@ -211,40 +211,21 @@ enviar_mensaje_pantalla(){
 borrado_canales() {
 	DESTINO=/etc/enigma2
 	HAY_FAV_TDT=$(grep -il ee0000 ${DESTINO}/*.tv | wc -l)
-	HAY_FAV_IPTV=$(grep -il http ${DESTINO}/*.tv | grep -v streamTDT.tv | wc -l)
 	EXCLUDE_FAV=exclude_fav.txt
-	if [ "$HAY_FAV_TDT" -gt 0 ] || [ "$HAY_FAV_IPTV" -gt 0 ];
+	if [ "$HAY_FAV_TDT" -gt 0 ];
 	then
-		if [ "$HAY_FAV_TDT" -gt 0 ];
-		then
-			for i in $(ls ${DESTINO}/*.tv);
-			do
-				BOUQUET_FILE=$i
-				EXCLUIR_FAV=$(grep -il ee0000 ${BOUQUET_FILE} | wc -l)
-				if [ "$EXCLUIR_FAV_TDT" -eq 0 ];
-				then
-					rm -f $BOUQUET_FILE
-				else
-					BOUQUET_NAME=$(echo ${BOUQUET_FILE} | cut -d'/' -f4)
-					echo $BOUQUET_NAME >> $DIR_TMP/$EXCLUDE_FAV
-				fi
-			done
-		fi
-		if [ "$HAY_FAV_IPTV" -gt 0 ];
-		then
-			for i in $(ls ${DESTINO}/*.tv | grep -v streamTDT.tv);
-			do
-				BOUQUET_FILE=$i
-				EXCLUIR_FAV=$(grep -il http ${BOUQUET_FILE} | wc -l)
-				if [ "$EXCLUIR_FAV" -eq 0 ];
-				then
-					rm -f $BOUQUET_FILE
-				else
-					BOUQUET_NAME=$(echo ${BOUQUET_FILE} | cut -d'/' -f4)
-					echo $BOUQUET_NAME >> $DIR_TMP/$EXCLUDE_FAV
-				fi
-			done
-		fi
+		for i in $(ls ${DESTINO}/*.tv);
+		do
+			BOUQUET_FILE=$i
+			EXCLUIR_FAV=$(grep -il ee0000 ${BOUQUET_FILE} | wc -l)
+			if [ "$EXCLUIR_FAV_TDT" -eq 0 ];
+			then
+				rm -f $BOUQUET_FILE
+			else
+				BOUQUET_NAME=$(echo ${BOUQUET_FILE} | cut -d'/' -f4)
+				echo $BOUQUET_NAME >> $DIR_TMP/$EXCLUDE_FAV
+			fi
+		done
 	else
 		ls $DESTINO/*.tv $DESTINO/*.radio $DESTINO/lamedb $DESTINO/blacklist $DESTINO/whitelist $DESTINO/satellites.xml | xargs rm
 	fi
