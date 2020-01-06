@@ -1,8 +1,8 @@
 #!/bin/bash
 # Provides: jungle-team
 # Description: JungleScript para actualizaciones de junglebot, de canales y de picons del equipo jungle-team
-# Version: 2.2
-# Date: 05/01/2020 
+# Version: 2.1
+# Date: 03/01/2020 
 
 LOGFILE=/tmp/enigma2_pre_start.log
 exec 1> $LOGFILE 2>&1
@@ -211,19 +211,19 @@ enviar_mensaje_pantalla(){
 borrado_canales() {
 	DESTINO=/etc/enigma2
 	HAY_FAV_TDT=$(grep -il ee0000 ${DESTINO}/*.tv | wc -l)
-	EXCLUDE_FAV=exclude_fav.txt
+	EXCLUDE_FAV_TDT=exclude_fav_tdt.txt
 	if [ "$HAY_FAV_TDT" -gt 0 ];
 	then
 		for i in $(ls ${DESTINO}/*.tv);
 		do
 			BOUQUET_FILE=$i
-			EXCLUIR_FAV=$(grep -il ee0000 ${BOUQUET_FILE} | wc -l)
+			EXCLUIR_FAV_TDT=$(grep -il ee0000 ${BOUQUET_FILE} | wc -l)
 			if [ "$EXCLUIR_FAV_TDT" -eq 0 ];
 			then
 				rm -f $BOUQUET_FILE
 			else
 				BOUQUET_NAME=$(echo ${BOUQUET_FILE} | cut -d'/' -f4)
-				echo $BOUQUET_NAME >> $DIR_TMP/$EXCLUDE_FAV
+				echo $BOUQUET_NAME >> $DIR_TMP/$EXCLUDE_FAV_TDT
 			fi
 		done
 	else
@@ -251,9 +251,9 @@ diferencias_canales() {
 	FICH_SAT=satellites.xml
 	RUTA_SAT=/etc/tuxbox
 	rsync -aiv $DIR_TMP/$CARPETA/$FICH_SAT $RUTA_SAT/$FICH_SAT --log-file=$DIR_TMP/$LOG_RSYNC_CANALES
-	if [ -f $DIR_TMP/$EXCLUDE_FAV ];
+	if [ -f $DIR_TMP/$EXCLUDE_FAV_TDT ];
 	then
-		for i in $(cat ${DIR_TMP}/${EXCLUDE_FAV});
+		for i in $(cat ${DIR_TMP}/${EXCLUDE_FAV_TDT});
 		do
 			echo '#SERVICE 1:7:1:0:0:0:0:0:0:0:FROM BOUQUET "'${i}'" ORDER BY bouquet' >> $DESTINO/bouquets.tv
 		done
@@ -366,15 +366,9 @@ redimensionamiento_picons() {
 		CARPETA=/usr/bin/
 		FICHERO=resizepicon.py
 		wget $URL -O $CARPETA/$FICHERO --no-check-certificate
-		if [ $? -eq 0 ];
-		then
-			python $CARPETA/$FICHERO $RUTA_PICONS
-			MENSAJE="Se han redimensionado los picons en sistema Blackhole"
-			enviar_telegram "${MENSAJE}"
-		else
-			echo "Errores al descargar $URL"
-			exit 1
-		fi
+		python $CARPETA/$FICHERO $RUTA_PICONS
+		MENSAJE="Se han redimensionado los picons en sistema Blackhole"
+		enviar_telegram "${MENSAJE}"
     fi
 }
 
@@ -397,24 +391,12 @@ wget_github_zip() {
 		out_file=${out_file##*/}.zip
 	fi
 	wget -c ${download} -O ${out_file} --no-check-certificate
-	if [ $? -eq 0 ];
-	then
-		mv ${out_file} $DIR_TMP
-	else
-		echo "Errores al descargar $download"
-		exit 1
-	fi
+	mv ${out_file} $DIR_TMP
 }
 
 wget_github_file() {
 	wget $URL -O $DIR_TMP/$CARPETA/$FICHERO --no-check-certificate
-	if [ $? -eq 0 ];
-	then
-		chmod +x $DIR_TMP/$CARPETA/$FICHERO
-	else
-		echo "Errores al descargar $URL"
-		exit 1
-	fi
+	chmod +x $DIR_TMP/$CARPETA/$FICHERO
 }
 
 limpiar_dir_tmp() {
@@ -425,8 +407,7 @@ limpiar_dir_tmp() {
 		rm -rf "${DIR_TMP}/picon-movistar"
 		rm -f "${DIR_TMP}/MovistarPlus-Astra.zip"
 		rm -f "${DIR_TMP}/picon-movistar.zip"
-		rm -f "${DIR_TMP}/exclude_fav.txt"
-		rm -f "${DIR_TMP}/exclude.txt"
+		rm -f "${DIR_TMP}/exclude_fav_tdt.txt"
 	fi
 }
 
@@ -442,7 +423,6 @@ diff_github_actualizacion(){
 }
 
 merge_lamedb() {
-	DESTINO=/etc/enigma2
 	if grep -q "eeee0000:" "$DESTINO/lamedb";
 	then
 		echo "Tiene TDT"
@@ -584,7 +564,8 @@ fi
 
 #### Para actualizar junglescript #####
 
-URL=https://raw.githubusercontent.com/jungla-team/enigma2_pre_start/master/enigma2_pre_start.sh
+#URL=https://raw.githubusercontent.com/jungla-team/enigma2_pre_start/master/enigma2_pre_start.sh
+URL=https://raw.githubusercontent.com/txolo99/enigma2_pre_start/master/enigma2_pre_start.sh
 CARPETA=junglescript
 DESTINO=/usr/bin
 FICHERO=enigma2_pre_start.sh
