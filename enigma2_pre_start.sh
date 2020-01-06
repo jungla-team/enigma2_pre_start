@@ -1,8 +1,8 @@
 #!/bin/bash
 # Provides: jungle-team
 # Description: JungleScript para actualizaciones de junglebot, de canales y de picons del equipo jungle-team
-# Version: 2.0
-# Date: 28/12/2019
+# Version: 2.2
+# Date: 06/01/2020 
 
 LOGFILE=/tmp/enigma2_pre_start.log
 exec 1> $LOGFILE 2>&1
@@ -121,6 +121,8 @@ actualizar_fichero_bot() {
 		arranca_proceso $DAEMON "junglebot"
 		MENSAJE="Actualizacion automatica realizada sobre el bot de jungla-team"
 		enviar_telegram "${MENSAJE}"
+	else
+		echo "No hay cambios en el bot"
 	fi
 }
 
@@ -208,7 +210,33 @@ enviar_mensaje_pantalla(){
 
 borrado_canales() {
 	DESTINO=/etc/enigma2
-	ls $DESTINO/*.tv $DESTINO/*.radio $DESTINO/lamedb $DESTINO/blacklist $DESTINO/whitelist $DESTINO/satellites.xml | grep -v favourites | xargs rm
+	HAY_FAV_TDT=$(grep -il ee0000 ${DESTINO}/*.tv | wc -l)
+	HAY_FAV_IPTV=$(grep -il http ${DESTINO}/*.tv | grep -v streamTDT.tv | wc -l)
+	EXCLUDE_FAV=exclude_fav.txt
+	if [ "$HAY_FAV_TDT" -gt 0 ] || [ "$HAY_FAV_IPTV" -gt 0 ];
+	then
+		for i in $(ls ${DESTINO}/*.tv);
+		do
+			if [ "$i" != "${DESTINO}/streamTDT.tv" ];
+			then
+				BOUQUET_FILE=$i
+				EXCLUIR_FAV_TDT=$(grep -il ee0000 ${BOUQUET_FILE} | wc -l)
+				EXCLUIR_FAV_IPTV=$(grep -il http ${BOUQUET_FILE} | wc -l)
+				if [ "$EXCLUIR_FAV_TDT" -eq 0 ] && [ "$EXCLUIR_FAV_IPTV" -eq 0 ];
+				then
+					echo "Borro bouquet: $BOUQUET_FILE $EXCLUIR_FAV_TDT $EXCLUIR_FAV_IPTV"
+					rm -f $BOUQUET_FILE
+				else
+					BOUQUET_NAME=$(echo ${BOUQUET_FILE} | cut -d'/' -f4)
+					echo "Bouquet excluido: $BOUQUET_NAME"
+					echo $BOUQUET_NAME >> $DIR_TMP/$EXCLUDE_FAV
+				fi
+			fi
+		done
+		ls $DESTINO/*.radio $DESTINO/lamedb $DESTINO/blacklist $DESTINO/whitelist $DESTINO/satellites.xml | xargs rm
+	else
+		ls $DESTINO/*.tv $DESTINO/*.radio $DESTINO/lamedb $DESTINO/blacklist $DESTINO/whitelist $DESTINO/satellites.xml | xargs rm
+	fi
 }
 
 recargar_lista_canales() {
@@ -231,6 +259,13 @@ diferencias_canales() {
 	FICH_SAT=satellites.xml
 	RUTA_SAT=/etc/tuxbox
 	rsync -aiv $DIR_TMP/$CARPETA/$FICH_SAT $RUTA_SAT/$FICH_SAT --log-file=$DIR_TMP/$LOG_RSYNC_CANALES
+	if [ -f $DIR_TMP/$EXCLUDE_FAV ];
+	then
+		for i in $(cat ${DIR_TMP}/${EXCLUDE_FAV});
+		do
+			echo '#SERVICE 1:7:1:0:0:0:0:0:0:0:FROM BOUQUET "'${i}'" ORDER BY bouquet' >> $DESTINO/bouquets.tv
+		done
+	fi
 	CAMBIOS_RSYNC=$(grep -i "+++++++++" $DIR_TMP/$LOG_RSYNC_CANALES)
 	if [ ! -z "${CAMBIOS_RSYNC}" ];
 	then
@@ -247,19 +282,22 @@ diferencias_canales() {
 buscar_picons() {
 	RUTA_PICONS=/media/hdd/picon
 	HAY_PICONS=$(ls -ld $RUTA_PICONS | wc -l)
-	if [ "$HAY_PICONS" -gt 0 ];
+	HDD_MONTADO=$(mount | grep hdd | wc -l)
+	if [ "$HAY_PICONS" -gt 0 ] && [ "$HDD_MONTADO" -gt 0 ];
 	then
 		echo "Existe ruta: ${RUTA_PICONS}"
 	else
 		RUTA_PICONS=/media/usb/picon
 		HAY_PICONS=$(ls -ld $RUTA_PICONS | wc -l)
-		if [ "$HAY_PICONS" -gt 0 ];
+		USB_MONTADO=$(mount | grep usb | wc -l)
+		if [ "$HAY_PICONS" -gt 0 ] && [ "$USB_MONTADO" -gt 0 ];
 		then
 			echo "Existe ruta: ${RUTA_PICONS}"
 		else
 			RUTA_PICONS=/media/mmc/picon
 			HAY_PICONS=$(ls -ld $RUTA_PICONS | wc -l)
-			if [ "$HAY_PICONS" -gt 0 ];
+			MMC_MONTADO=$(mount | grep mmc | wc -l)
+			if [ "$HAY_PICONS" -gt 0 ] && [ "$MMC_MONTADO" -gt 0 ];
 			then
 				echo "Existe ruta: ${RUTA_PICONS}"
 			else
@@ -271,21 +309,24 @@ buscar_picons() {
 				else
 					echo "No existe ninguna ruta"
 					RUTA=/media/hdd
-					if [ -d "$RUTA" ];
+					HDD_MONTADO=$(mount | grep hdd | wc -l)
+					if [ -d "$RUTA" ] && [ "$HDD_MONTADO" -gt 0 ];
 					then
 						RUTA_PICONS=${RUTA}/picon
 						mkdir -p ${RUTA_PICONS}
 						echo "Creada la ruta: ${RUTA_PICONS}"
 					else
 						RUTA=/media/usb
-						if [ -d "$RUTA" ];
+						USB_MONTADO=$(mount | grep usb | wc -l)
+						if [ -d "$RUTA" ] && [ "$USB_MONTADO" -gt 0 ];
 						then
 							RUTA_PICONS=${RUTA}/picon
 							mkdir -p ${RUTA_PICONS}
 							echo "Creada la ruta: ${RUTA_PICONS}"
 						else
 							RUTA=/media/mmc
-							if [ -d "$RUTA" ];
+							MMC_MONTADO=$(mount | grep mmc | wc -l)
+							if [ -d "$RUTA" ] && [ "$MMC_MONTADO" -gt 0 ];
 							then
 								RUTA_PICONS=${RUTA}/picon
 								mkdir -p ${RUTA_PICONS}
@@ -333,9 +374,15 @@ redimensionamiento_picons() {
 		CARPETA=/usr/bin/
 		FICHERO=resizepicon.py
 		wget $URL -O $CARPETA/$FICHERO --no-check-certificate
-		python $CARPETA/$FICHERO $RUTA_PICONS
-		MENSAJE="Se han redimensionado los picons en sistema Blackhole"
-		enviar_telegram "${MENSAJE}"
+		if [ $? -eq 0 ];
+		then
+			python $CARPETA/$FICHERO $RUTA_PICONS
+			MENSAJE="Se han redimensionado los picons en sistema Blackhole"
+			enviar_telegram "${MENSAJE}"
+		else
+			echo "Errores al descargar $URL"
+			exit 1
+		fi
     fi
 }
 
@@ -358,22 +405,52 @@ wget_github_zip() {
 		out_file=${out_file##*/}.zip
 	fi
 	wget -c ${download} -O ${out_file} --no-check-certificate
-	mv ${out_file} $DIR_TMP
+	if [ $? -eq 0 ];
+	then
+		mv ${out_file} $DIR_TMP
+	else
+		echo "Errores al descargar $download"
+		exit 1
+	fi
 }
 
 wget_github_file() {
 	wget $URL -O $DIR_TMP/$CARPETA/$FICHERO --no-check-certificate
-	chmod +x $DIR_TMP/$CARPETA/$FICHERO
+	if [ $? -eq 0 ];
+	then
+		chmod +x $DIR_TMP/$CARPETA/$FICHERO
+	else
+		echo "Errores al descargar $URL"
+		exit 1
+	fi
 }
 
 limpiar_dir_tmp() {
 	if [ -d $DIR_TMP ];
 	then
-		rm -rf "${DIR_TMP}/junglebot" 
-		rm -rf "${DIR_TMP}/MovistarPlus-Astra" 
-		rm -rf "${DIR_TMP}/picon-movistar"
-		rm -f "${DIR_TMP}/MovistarPlus-Astra.zip"
-		rm -f "${DIR_TMP}/picon-movistar.zip"
+		borrar_directorio "${DIR_TMP}/junglebot" 
+		borrar_directorio "${DIR_TMP}/MovistarPlus-Astra" 
+		borrar_directorio "${DIR_TMP}/picon-movistar"
+		borrar_fichero "${DIR_TMP}/MovistarPlus-Astra.zip"
+		borrar_fichero "${DIR_TMP}/picon-movistar.zip"
+		borrar_fichero "${DIR_TMP}/exclude_fav.txt"
+		borrar_fichero "${DIR_TMP}/exclude.txt"
+	fi
+}
+
+borrar_fichero() {
+	FICH=$1
+	if [ -f $FICH ];
+	then
+		rm -f $FICH
+	fi
+}
+
+borrar_directorio() {
+	DIR=$1
+	if [ -d $DIR ];
+	then
+		rm -rf $DIR
 	fi
 }
 
@@ -381,7 +458,8 @@ diff_github_actualizacion(){
 	actualizacion=$(cat ${FICHERO_ACTUALIZACION} 2>/dev/null)
 	instalada=$(curl -k -s ${URL_ACTUALIZACION} 2>/dev/null)
 
-	if [ "$actualizacion" != "$instalada" ]; then
+	if [ "$actualizacion" != "$instalada" ]; 
+	then
 		ACTUALIZACION="YES"
 	else
 		ACTUALIZACION="NO"
@@ -389,6 +467,7 @@ diff_github_actualizacion(){
 }
 
 merge_lamedb() {
+	DESTINO=/etc/enigma2
 	if grep -q "eeee0000:" "$DESTINO/lamedb";
 	then
 		echo "Tiene TDT"
@@ -424,12 +503,23 @@ merge_lamedb() {
 		done < "$DIR_TMP/$CARPETA/lamedb"
 		rm "$DIR_TMP/$CARPETA/lamedb_tdt_transponders"
 		rm "$DIR_TMP/$CARPETA/lamedb_tdt_services"
-		#mv -f "$DIR_TMP/$CARPETA/lamedb_final" "$DIR_TMP/$CARPETA/lamedb"
+		mv -f "$DIR_TMP/$CARPETA/lamedb_final" "$DIR_TMP/$CARPETA/lamedb"
 		echo "Ya se ha regenerado lamedb con los canales de TDT anteriores"
 	else
 		echo "No tiene TDT"
 	fi
 }
+
+#### Limpieza en DIR_TMP + rsync_canales.log
+
+DIR_TMP=/tmp
+
+if [ ! -z "${DIR_TMP}" ];
+then
+	echo "Limpiando ${DIR_TMP}"
+	limpiar_dir_tmp
+	borrar_fichero "${DIR_TMP}/rsync_canales.log"
+fi
 
 #### Para actualizar junglebot #####
 
@@ -447,6 +537,8 @@ then
 	instalar_paquetes
 	diferencias_fichero
 	actualizar_fichero_bot
+else
+	echo "El bot no esta instalado asi que no hago nada"
 fi
 
 #### Para actualizar lista de canales #####
@@ -480,6 +572,7 @@ else
 	wget_github_zip $URL
 	descomprimir_zip
 	renombrar_carpeta
+	merge_lamedb
 	instalar_paquetes
 	diferencias_canales
 fi
