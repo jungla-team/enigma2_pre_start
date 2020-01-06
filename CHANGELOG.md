@@ -1,10 +1,5 @@
 # Changelog
 
-## [2.2] - 05-01-2020
-
-- Control errores de resolución del host de raw.githubusercontent.com (wget: unable to resolve host address raw.github...)
-- Añadida funcionalidad para no borrar bouquets que tengan favoritos IPTV
-
 ## [2.1] - 03-01-2020
 
 - Arreglado bug con creación de picons en la ruta /media/hdd
