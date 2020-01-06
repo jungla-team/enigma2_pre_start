@@ -620,8 +620,7 @@ fi
 
 #### Para actualizar junglescript #####
 
-#URL=https://raw.githubusercontent.com/jungla-team/enigma2_pre_start/master/enigma2_pre_start.sh
-URL=https://raw.githubusercontent.com/txolo99/enigma2_pre_start/master/enigma2_pre_start.sh
+URL=https://raw.githubusercontent.com/jungla-team/enigma2_pre_start/master/enigma2_pre_start.sh
 CARPETA=junglescript
 DESTINO=/usr/bin
 FICHERO=enigma2_pre_start.sh
