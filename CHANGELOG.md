@@ -1,5 +1,10 @@
 # Changelog
 
+## [2.3] - 18-01-2020
+
+- Cambio de ruta de descarga de zips a directorio temporal directamente
+- Añadida limpieza del log de rsync de picons al inicio
+
 ## [2.2] - 06-01-2020
 
 - Control errores de resolución del host de raw.githubusercontent.com (wget: unable to resolve host address raw.github...)
