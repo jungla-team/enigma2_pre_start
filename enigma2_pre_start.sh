@@ -1,8 +1,8 @@
 #!/bin/bash
 # Provides: jungle-team
 # Description: JungleScript para actualizaciones de junglebot, de canales y de picons del equipo jungle-team
-# Version: 2.2
-# Date: 06/01/2020 
+# Version: 2.3
+# Date: 18/01/2020 
 
 LOGFILE=/tmp/enigma2_pre_start.log
 exec 1> $LOGFILE 2>&1
@@ -404,11 +404,9 @@ wget_github_zip() {
 		download=${out_file}/archive/master.zip
 		out_file=${out_file##*/}.zip
 	fi
-	wget -c ${download} -O ${out_file} --no-check-certificate
-	if [ $? -eq 0 ];
+	wget -c ${download} -O $DIR_TMP/${out_file} --no-check-certificate
+	if [ $? -ne 0 ];
 	then
-		mv ${out_file} $DIR_TMP
-	else
 		echo "Errores al descargar $download"
 		exit 1
 	fi
@@ -434,7 +432,7 @@ limpiar_dir_tmp() {
 		borrar_fichero "${DIR_TMP}/MovistarPlus-Astra.zip"
 		borrar_fichero "${DIR_TMP}/picon-movistar.zip"
 		borrar_fichero "${DIR_TMP}/exclude_fav.txt"
-		borrar_fichero "${DIR_TMP}/exclude.txt"
+		borrar_fichero "${DIR_TMP}/excludes.txt"
 	fi
 }
 
@@ -510,7 +508,7 @@ merge_lamedb() {
 	fi
 }
 
-#### Limpieza en DIR_TMP + rsync_canales.log
+#### Limpieza en DIR_TMP + rsync_canales.log + rsync_picons.log
 
 DIR_TMP=/tmp
 
@@ -519,6 +517,7 @@ then
 	echo "Limpiando ${DIR_TMP}"
 	limpiar_dir_tmp
 	borrar_fichero "${DIR_TMP}/rsync_canales.log"
+	borrar_fichero "${DIR_TMP}/rsync_picons.log"
 fi
 
 #### Para actualizar junglebot #####
