@@ -1,5 +1,9 @@
 # Changelog
 
+## [2.4] - 25-01-2020
+
+- Fix en el borrado del fichero streamTDT.tv
+
 ## [2.3] - 18-01-2020
 
 - Cambio de ruta de descarga de zips a directorio temporal directamente
