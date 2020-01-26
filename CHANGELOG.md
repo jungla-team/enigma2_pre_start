@@ -3,7 +3,7 @@
 ## [2.4] - 26-01-2020
 
 - Fix en el borrado del fichero streamTDT.tv
-- Conservación de ficheros de favoritos si tienen añadidos manuales distintos a los del github
+- Conservación de ficheros de favoritos si tienen añadidos canales distintos a los del fichero de github
 
 ## [2.3] - 18-01-2020
 
