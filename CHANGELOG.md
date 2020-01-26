@@ -1,6 +1,6 @@
 # Changelog
 
-## [2.4] - 25-01-2020
+## [2.4] - 26-01-2020
 
 - Fix en el borrado del fichero streamTDT.tv
 
