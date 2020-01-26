@@ -53,18 +53,6 @@ diferencias_fichero() {
 	fi	  
 }
 
-diferencias_ficheroTDT() {
-	FICH_TDT="streamTDT.tv"
-	if diff -q $DIR_TMP/$CARPETA/$FICH_TDT $DESTINO/$FICH_TDT; 
-	then
-		CAMBIOS_TDT=0
-		echo "No hay cambios en el fichero ${DESTINO}/${FICH_TDT}"
-	else
-		CAMBIOS_TDT=1
-		echo "Hay cambios en el fichero ${DESTINO}/${FICH_TDT}"
-	fi
-}
-
 instalar_ipk(){
 	wget $URL_IPK -O $DIR_TMP/$FILE_IPK --no-check-certificate
 
