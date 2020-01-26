@@ -2,7 +2,7 @@
 # Provides: jungle-team
 # Description: JungleScript para actualizaciones de junglebot, de canales y de picons del equipo jungle-team
 # Version: 2.4
-# Date: 25/01/2020 
+# Date: 26/01/2020 
 
 LOGFILE=/tmp/enigma2_pre_start.log
 exec 1> $LOGFILE 2>&1
@@ -53,6 +53,18 @@ diferencias_fichero() {
 	fi	  
 }
 
+diferencias_ficheroTDT() {
+	FICH_TDT="streamTDT.tv"
+	if diff -q $DIR_TMP/$CARPETA/$FICH_TDT $DESTINO/$FICH_TDT; 
+	then
+		CAMBIOS_TDT=0
+		echo "No hay cambios en el fichero ${DESTINO}/${FICH_TDT}"
+	else
+		CAMBIOS_TDT=1
+		echo "Hay cambios en el fichero ${DESTINO}/${FICH_TDT}"
+	fi
+}
+
 instalar_ipk(){
 	wget $URL_IPK -O $DIR_TMP/$FILE_IPK --no-check-certificate
 
@@ -87,10 +99,10 @@ instalar_paquetes(){
 			fi
 		else
 			echo "Instalando rsync..."
+			opkg update
 			paquete=$(opkg list | grep rsync | grep tool | awk '{ print $1 }')
 			if [ ! -z "${paquete}" ];
 			then
-				opkg update
 				opkg install $paquete
 			fi
 		fi	
@@ -230,17 +242,13 @@ borrado_canales() {
 					BOUQUET_NAME=$(echo ${BOUQUET_FILE} | cut -d'/' -f4)
 					echo "Bouquet excluido: $BOUQUET_NAME"
 					echo $BOUQUET_NAME >> $DIR_TMP/$EXCLUDE_FAV
+					echo -e $BOUQUET_NAME >> $DIR_TMP/excludes.txt
 				fi
 			fi
 		done
 		ls $DESTINO/*.radio $DESTINO/lamedb $DESTINO/blacklist $DESTINO/whitelist $DESTINO/satellites.xml | xargs rm
 	else
-		if [ -f $DESTINO/streamTDT.tv ];
-		then
-			ls $DESTINO/*.tv $DESTINO/*.radio $DESTINO/lamedb $DESTINO/blacklist $DESTINO/whitelist $DESTINO/satellites.xml | grep -v streamTDT.tv | xargs rm
-		else
-			ls $DESTINO/*.tv $DESTINO/*.radio $DESTINO/lamedb $DESTINO/blacklist $DESTINO/whitelist $DESTINO/satellites.xml | xargs rm
-		fi
+		ls $DESTINO/*.tv $DESTINO/*.radio $DESTINO/lamedb $DESTINO/blacklist $DESTINO/whitelist $DESTINO/satellites.xml | xargs rm
 	fi
 }
 
@@ -251,16 +259,9 @@ recargar_lista_canales() {
 diferencias_canales() {
 	DESTINO=/etc/enigma2
 	LOG_RSYNC_CANALES=rsync_canales.log
-	if [ -f $DESTINO/streamTDT.tv ]; 
-	then
-		borrado_canales
-		EXCLUDE_FILES=$(echo -e "README.md\nLICENSE\nstreamTDT.tv\nsatellites.xml" > $DIR_TMP/excludes.txt)
-		rsync -aiv $DIR_TMP/$CARPETA/* $DESTINO --exclude-from=$DIR_TMP/excludes.txt --log-file=$DIR_TMP/$LOG_RSYNC_CANALES
-	else
-		borrado_canales
-		EXCLUDE_FILES=$(echo -e "README.md\nLICENSE\nsatellites.xml" > $DIR_TMP/excludes.txt)
-		rsync -aiv $DIR_TMP/$CARPETA/* $DESTINO --exclude-from=$DIR_TMP/excludes.txt --log-file=$DIR_TMP/$LOG_RSYNC_CANALES
-	fi
+	EXCLUDE_FILES=$(echo -e "README.md\nLICENSE\nsatellites.xml" > $DIR_TMP/excludes.txt)
+	borrado_canales
+	rsync -aiv $DIR_TMP/$CARPETA/* $DESTINO --exclude-from=$DIR_TMP/excludes.txt --log-file=$DIR_TMP/$LOG_RSYNC_CANALES
 	FICH_SAT=satellites.xml
 	RUTA_SAT=/etc/tuxbox
 	rsync -aiv $DIR_TMP/$CARPETA/$FICH_SAT $RUTA_SAT/$FICH_SAT --log-file=$DIR_TMP/$LOG_RSYNC_CANALES
@@ -268,7 +269,13 @@ diferencias_canales() {
 	then
 		for i in $(cat ${DIR_TMP}/${EXCLUDE_FAV});
 		do
-			echo '#SERVICE 1:7:1:0:0:0:0:0:0:0:FROM BOUQUET "'${i}'" ORDER BY bouquet' >> $DESTINO/bouquets.tv
+			EXISTE_FAV=$(grep -i "${i}" $DESTINO/bouquets.tv | wc -l)
+			if [ "$EXISTE_FAV" -eq 0 ];
+			then
+				echo '#SERVICE 1:7:1:0:0:0:0:0:0:0:FROM BOUQUET "'${i}'" ORDER BY bouquet' >> $DESTINO/bouquets.tv
+			else
+				echo "Existe favorito ${i} ya previamente en bouquets.tv"
+			fi
 		done
 	fi
 	CAMBIOS_RSYNC=$(grep -i "+++++++++" $DIR_TMP/$LOG_RSYNC_CANALES)
