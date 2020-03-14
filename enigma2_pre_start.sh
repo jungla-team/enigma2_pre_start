@@ -1,8 +1,8 @@
 #!/bin/bash
 # Provides: jungle-team
 # Description: JungleScript para actualizaciones de junglebot, de canales y de picons del equipo jungle-team
-# Version: 2.4
-# Date: 26/01/2020 
+# Version: 3.0
+# Date: 13/03/2020 
 
 LOGFILE=/tmp/enigma2_pre_start.log
 exec 1> $LOGFILE 2>&1
@@ -249,6 +249,15 @@ diferencias_canales() {
 	LOG_RSYNC_CANALES=rsync_canales.log
 	EXCLUDE_FILES=$(echo -e "README.md\nLICENSE\nsatellites.xml" > $DIR_TMP/excludes.txt)
 	borrado_canales
+	if [ -f $DESTINO/fav_bouquets ];
+	then
+		for i in $(cat $DESTINO/fav_bouquets);
+		do
+			ls $DIR_TMP/$CARPETA/*.tv | grep $i | cut -d'/' -f4 >> $DIR_TMP/excludes.txt
+			sed -i "/$i/d" $DIR_TMP/$CARPETA/bouquets.tv
+		done
+	fi
+	cat $DIR_TMP/excludes.txt
 	rsync -aiv $DIR_TMP/$CARPETA/* $DESTINO --exclude-from=$DIR_TMP/excludes.txt --log-file=$DIR_TMP/$LOG_RSYNC_CANALES
 	FICH_SAT=satellites.xml
 	RUTA_SAT=/etc/tuxbox
@@ -428,8 +437,14 @@ limpiar_dir_tmp() {
 	then
 		borrar_directorio "${DIR_TMP}/junglebot" 
 		borrar_directorio "${DIR_TMP}/MovistarPlus-Astra" 
+		borrar_directorio "${DIR_TMP}/setting_lince_astra"
+		borrar_directorio "${DIR_TMP}/setting_lince_astra_hotbird"
+		borrar_directorio "${DIR_TMP}/setting_astra_comunitaria"
 		borrar_directorio "${DIR_TMP}/picon-movistar"
 		borrar_fichero "${DIR_TMP}/MovistarPlus-Astra.zip"
+		borrar_fichero "${DIR_TMP}/setting_lince_astra.zip"
+		borrar_fichero "${DIR_TMP}/setting_lince_astra_hotbird.zip"
+		borrar_fichero "${DIR_TMP}/setting_astra_comunitaria.zip"
 		borrar_fichero "${DIR_TMP}/picon-movistar.zip"
 		borrar_fichero "${DIR_TMP}/exclude_fav.txt"
 		borrar_fichero "${DIR_TMP}/excludes.txt"
@@ -542,15 +557,44 @@ fi
 
 #### Para actualizar lista de canales #####
 
+DIR_USR=/usr/bin
+if [ ! -f $DIR_USR/enigma2_pre_start.conf ];
+then
+	URL=https://github.com/jungla-team/setting_lince_astra/archive/master.zip
+	URL_ACTUALIZACION=https://raw.githubusercontent.com/jungla-team/setting_lince_astra/master/actualizacion
+	CARPETA=setting_lince_astra
+else
+	. $DIR_USR/enigma2_pre_start.conf
+	case "$LISTACANALES" in
+	'astra')
+		URL=https://github.com/jungla-team/setting_lince_astra/archive/master.zip
+		URL_ACTUALIZACION=https://raw.githubusercontent.com/jungla-team/setting_lince_astra/master/actualizacion
+		CARPETA=setting_lince_astra
+		;;
+	'astra-hotbird')
+		URL=https://github.com/jungla-team/setting_lince_astra_hotbird/archive/master.zip
+		URL_ACTUALIZACION=https://raw.githubusercontent.com/jungla-team/setting_lince_astra_hotbird/master/actualizacion
+		CARPETA=setting_lince_astra_hotbird
+		;;
+	'astra-comunitaria')
+		URL=https://github.com/jungla-team/setting_astra_comunitaria/archive/master.zip
+		URL_ACTUALIZACION=https://raw.githubusercontent.com/jungla-team/setting_astra_comunitaria/master/actualizacion
+		CARPETA=setting_astra_comunitaria
+		;;
+	'*')
+		URL=https://github.com/jungla-team/setting_lince_astra/archive/master.zip
+		URL_ACTUALIZACION=https://raw.githubusercontent.com/jungla-team/setting_lince_astra/master/actualizacion
+		CARPETA=setting_lince_astra
+		;;
+	esac
+fi
+
 DESTINO=/etc/enigma2
-URL=https://github.com/jungla-team/MovistarPlus-Astra/archive/master.zip
-CARPETA=MovistarPlus-Astra
 DIR_TMP=/tmp
 ZIP=$CARPETA.zip
 
 if [ -f $DESTINO/actualizacion ];
 then
-    URL_ACTUALIZACION=https://raw.githubusercontent.com/jungla-team/MovistarPlus-Astra/master/actualizacion
 	FICHERO_ACTUALIZACION=$DESTINO/actualizacion
 	diff_github_actualizacion
 	if [ "${ACTUALIZACION}" == "YES" ];
