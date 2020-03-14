@@ -1,5 +1,10 @@
 # Changelog
 
+## [3.0] - 14-03-2020
+
+- Añadida función para no instalar los bouquets que se indiquen el fichero /etc/enigma2/fav_bouquets
+- Posibilidad de elegir que lista de canales instalar: astra, astra-hotbird o astra-comunitaria a través del fichero /usr/bin/enigma2_pre_start.conf
+
 ## [2.4] - 26-01-2020
 
 - Fix en el borrado del fichero streamTDT.tv
