@@ -10,7 +10,7 @@ chmod +x /usr/bin/enigma2_pre_start.sh
 
 Poniendo este script con este nombre conseguimos que en cada reinicio se ejecute antes de arrancar enigma2.sh.
 
-Podemos elegir qué lista instalar creando este archivo de configuración: /usr/bin/enigma2_pre_start.conf y metiendo dentro la variable LISTACANALES con uno de estos valores (astra, astra-hotbird, astra-comunitaria). 
+Podemos elegir qué lista de canales instalar creando este archivo de configuración: /usr/bin/enigma2_pre_start.conf y metiendo dentro la variable LISTACANALES con uno de estos valores (astra, astra-hotbird, astra-comunitaria). 
 
 Ejemplo: LISTACANALES=astra
 
