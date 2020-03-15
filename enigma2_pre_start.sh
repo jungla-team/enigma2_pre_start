@@ -1,8 +1,8 @@
 #!/bin/bash
 # Provides: jungle-team
 # Description: JungleScript para actualizaciones de junglebot, de canales y de picons del equipo jungle-team
-# Version: 3.0
-# Date: 13/03/2020 
+# Version: 3.1
+# Date: 15/03/2020 
 
 LOGFILE=/tmp/enigma2_pre_start.log
 exec 1> $LOGFILE 2>&1
@@ -131,8 +131,11 @@ actualizar_fichero_junglescript() {
 	then
 		MENSAJE="Actualizacion automatica realizada sobre jungleScript"
 		enviar_telegram "${MENSAJE}"
+		echo "Copiando fichero jungleScript..."
 		cp $DIR_TMP/$CARPETA/$FICHERO $DESTINO/$FICHERO
 	fi
+	echo "Saliendo..."
+	exit 0
 }
 
 parar_proceso() {
