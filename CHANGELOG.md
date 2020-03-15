@@ -1,5 +1,9 @@
 # Changelog
 
+## [3.1] - 15-03-2020
+
+- Fix en la autoupdate de enigma2_pre_start.sh
+
 ## [3.0] - 14-03-2020
 
 - Añadida función para no instalar los bouquets que se indiquen el fichero /etc/enigma2/fav_bouquets
