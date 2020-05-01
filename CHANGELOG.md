@@ -1,5 +1,10 @@
 # Changelog
 
+## [3.2] - 02-05-2020
+
+- Fix en la parada del bot cuando hay que actualizarlo
+- Añádida creación del fichero de configuración si no existe
+
 ## [3.1] - 15-03-2020
 
 - Fix en la autoupdate de enigma2_pre_start.sh
