@@ -1,8 +1,8 @@
 #!/bin/bash
 # Provides: jungle-team
 # Description: JungleScript para actualizaciones de junglebot, de canales y de picons del equipo jungle-team
-# Version: 3.1
-# Date: 15/03/2020 
+# Version: 3.2
+# Date: 02/05/2020 
 
 LOGFILE=/tmp/enigma2_pre_start.log
 exec 1> $LOGFILE 2>&1
@@ -114,7 +114,7 @@ instalar_paquetes(){
 actualizar_fichero_bot() {
 	if [ "$CAMBIOS" -eq 1 ]
 	then
-		parar_proceso $DAEMON "junglebot"
+		parar_proceso $DAEMON
 		cp $DIR_TMP/$CARPETA/$FICHERO $DESTINO/$FICHERO
 		chmod +x $DESTINO/$FICHERO
 		rm -f $DESTINO/parametros.pyo
@@ -140,33 +140,14 @@ actualizar_fichero_junglescript() {
 
 parar_proceso() {
     DEMONIO=$1
-	PIDFILE_NAME=$2
 	PROCESO=`ps -ef | grep ${DEMONIO} | grep -v grep | wc -l`
 	if [ "$PROCESO" -gt 0 ]
 	then
-		PIDFILE="/var/run/${PIDFILE_NAME}.pid"
-		PIDFILE_NUMBER=$(cat ${PIDFILE})
-		if [ "$PIDFILE_NUMBER" ];
-		then
-			INIT=$(ls /sbin/start-stop-daemon)
-			if [ -f $INIT ];
-			then
-				$INIT -K -p $PIDFILE
-				rm -f $PIDFILE
-			else
-				procesos=`ps -ef | grep ${DEMONIO} | grep -v grep | awk '{ print $2 }'`
-				for i in $procesos;
-				do
-					kill -9 $i
-				done
-		    fi
-		else
-			procesos=`ps -ef | grep ${DEMONIO} | grep -v grep | awk '{ print $2 }'`
-			for i in $procesos;
-			do
-				kill -9 $i
-			done
-		fi
+		procesos=`ps -ef | grep ${DEMONIO} | grep -v grep | awk '{ print $2 }'`
+		for i in $procesos;
+		do
+			kill -9 $i
+		done
 	fi
 }
 
@@ -566,6 +547,7 @@ then
 	URL=https://github.com/jungla-team/setting_lince_astra/archive/master.zip
 	URL_ACTUALIZACION=https://raw.githubusercontent.com/jungla-team/setting_lince_astra/master/actualizacion
 	CARPETA=setting_lince_astra
+	echo "LISTACANALES=astra" > $DIR_USR/enigma2_pre_start.conf
 else
 	. $DIR_USR/enigma2_pre_start.conf
 	case "$LISTACANALES" in
