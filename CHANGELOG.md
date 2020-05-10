@@ -1,5 +1,10 @@
 # Changelog
 
+## [3.3] - 10-05-2020
+
+- Añadida instalación de requisitos pip para el junglebot de Telegram
+- Añádida variable de versión 
+
 ## [3.2] - 02-05-2020
 
 - Fix en la parada del bot cuando hay que actualizarlo
