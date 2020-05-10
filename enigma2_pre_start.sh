@@ -1,9 +1,10 @@
 #!/bin/bash
 # Provides: jungle-team
 # Description: JungleScript para actualizaciones de junglebot, de canales y de picons del equipo jungle-team
-# Version: 3.2
-# Date: 02/05/2020 
+# Version: 3.3
+# Date: 10/05/2020 
 
+VERSION=3.3
 LOGFILE=/tmp/enigma2_pre_start.log
 exec 1> $LOGFILE 2>&1
 set -x
@@ -63,6 +64,30 @@ instalar_ipk(){
 		opkg install $DIR_TMP/$FILE_IPK
 	else
 		echo "No se ha podido descargar el fichero ipk: $DIR_TMP/$FILE_IPK"
+	fi
+}
+
+instalar_librerias_pip(){
+    URL_REQ=https://raw.githubusercontent.com/jungla-team/junglebot/master/requirements.txt
+    REQUERIMENTS=$DIR_TMP/$CARPETA/requirements.txt
+	wget $URL_REQ -O $REQUERIMENTS --no-check-certificate
+	
+	if [ -f  $REQUERIMENTS ];
+	then
+		if [ -f /etc/vtiversion.info ];
+		then
+			echo "Instalando requisitos pip..."
+			PIP="/opt/bin/pip"
+		else
+			if [ -f /usr/bin/pip ];
+			then
+				echo "Instalando requisitos pip..."
+				PIP="/usr/bin/pip"
+			fi
+		fi
+		$PIP install -r $REQUERIMENTS 
+	else
+		echo "No se ha podido descargar el fichero: ${REQUERIMENTS}"
 	fi
 }
 
@@ -507,6 +532,9 @@ merge_lamedb() {
 	fi
 }
 
+#### Incluir en el log la versión de JungleScript que está usando
+echo "Versión JungleScript: ${VERSION}"
+
 #### Limpieza en DIR_TMP + rsync_canales.log + rsync_picons.log
 
 DIR_TMP=/tmp
@@ -533,6 +561,7 @@ then
 	crear_dir_tmp
 	wget_github_file
 	instalar_paquetes
+	instalar_librerias_pip
 	diferencias_fichero
 	actualizar_fichero_bot
 else
