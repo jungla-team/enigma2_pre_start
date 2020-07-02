@@ -1,10 +1,10 @@
 #!/bin/bash
 # Provides: jungle-team
 # Description: JungleScript para actualizaciones de junglebot, de canales y de picons del equipo jungle-team
-# Version: 3.3
-# Date: 10/05/2020 
+# Version: 3.4
+# Date: 02/07/2020 
 
-VERSION=3.3
+VERSION=3.4
 LOGFILE=/tmp/enigma2_pre_start.log
 exec 1> $LOGFILE 2>&1
 set -x
@@ -532,6 +532,29 @@ merge_lamedb() {
 	fi
 }
 
+comprobar_espacio(){
+    umbral=30000
+    espacio_libre_tmp=$(df -k /tmp | awk '{ print $4 }' | tail -1)
+	if [ $espacio_libre_tmp -gt $umbral ]; 
+	then
+		ESPACIO_TMP="OK";
+		echo "Hay espacio libre en /tmp ==> ${espacio_libre_tmp}"
+	else 
+		ESPACIO_TMP="NOK";
+        echo "No hay espacio libre en /tmp ==> ${espacio_libre_tmp}"		
+	fi
+	
+    espacio_libre=$(df -k ${RUTA_PICONS} | awk '{ print $4 }' | tail -1)
+	if [ $espacio_libre -gt $umbral ]; 
+	then
+		ESPACIO_PICONS="OK";
+		echo "Hay espacio libre en /tmp ==> ${espacio_libre}"
+	else 
+		ESPACIO_PICONS="NOK"; 
+		echo "No hay espacio libre en /tmp ==> ${espacio_libre}"
+	fi	
+}
+
 #### Incluir en el log la versión de JungleScript que está usando
 echo "Versión JungleScript: ${VERSION}"
 
@@ -636,7 +659,7 @@ fi
 
 #### Para actualizar picons #####
 
-URL=https://github.com/jungla-team/picon-movistar/archive/master.zip
+URL=http://tropical.jungle-team.online/picon-movistar/archive/master.zip
 CARPETA=picon-movistar
 DIR_TMP=/tmp
 ZIP=$CARPETA.zip
@@ -650,7 +673,28 @@ then
 		FICHERO_ACTUALIZACION=$RUTA_PICONS/actualizacion
 		diff_github_actualizacion
 		if [ "${ACTUALIZACION}" == "YES" ];
-		then	
+		then
+            comprobar_espacio
+			if [ "${ESPACIO_TMP}" = "OK" ] && [ "${ESPACIO_PICONS}" = "OK" ];
+			then
+				crear_dir_tmp
+				wget_github_zip $URL
+				descomprimir_zip
+				renombrar_carpeta
+				instalar_paquetes
+				diferencias_picons
+				redimensionamiento_picons
+			else
+				echo "No hay espacio libre en /tmp o en en ${RUTA_PICONS} para descargar los picons. Hay que revisar"
+			fi
+		else
+			echo "No hay cambios en picons"
+		fi
+	else
+		echo "No existe fichero de actualizacion de picons, asi que fuerzo la actualizacion de picons"
+		comprobar_espacio
+		if [ "${ESPACIO_TMP}" = "OK" ] && [ "${ESPACIO_PICONS}" = "OK" ];
+		then
 			crear_dir_tmp
 			wget_github_zip $URL
 			descomprimir_zip
@@ -659,17 +703,8 @@ then
 			diferencias_picons
 			redimensionamiento_picons
 		else
-			echo "No hay cambios en picons"
+			echo "No hay espacio libre en /tmp o en en ${RUTA_PICONS} para descargar los picons. Hay que revisar"
 		fi
-	else
-		echo "No existe fichero de actualizacion de picons, asi que fuerzo la actualizacion de picons"
-		crear_dir_tmp
-		wget_github_zip $URL
-		descomprimir_zip
-		renombrar_carpeta
-		instalar_paquetes
-		diferencias_picons
-		redimensionamiento_picons
 	fi
 else
 	echo "No existe ninguna ruta con picons, asi que no actualizo"
@@ -704,3 +739,4 @@ fi
 #### Como ultima instruccion meto la propia actualizacion de JungleScript
 
 actualizar_fichero_junglescript
+
