@@ -1,5 +1,10 @@
 # Changelog
 
+## [3.4] - 02-07-2020
+
+- Añadida mejora para controlar el espacio tanto en /tmp como en la ruta donde se tengan los picons. Si no hubiera disponibles 30MB no descarga los picons
+- Añádida descarga de picons desde el servidor de jungle-team en vez desde github (por problemas de conexión y lentitud hacia github detectados)
+
 ## [3.3] - 10-05-2020
 
 - Añadida instalación de requisitos pip para el junglebot de Telegram
