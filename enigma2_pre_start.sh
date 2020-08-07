@@ -1,10 +1,10 @@
 #!/bin/bash
 # Provides: jungle-team
-# Description: JungleScript para actualizaciones de junglebot, de canales y de picons del equipo jungle-team
-# Version: 3.4
-# Date: 02/07/2020 
+# Description: JungleScript para actualizaciones de lista de canales y de picons del equipo jungle-team
+# Version: 3.5
+# Date: 07/08/2020 
 
-VERSION=3.4
+VERSION=3.5
 LOGFILE=/tmp/enigma2_pre_start.log
 exec 1> $LOGFILE 2>&1
 set -x
@@ -67,30 +67,6 @@ instalar_ipk(){
 	fi
 }
 
-instalar_librerias_pip(){
-    URL_REQ=https://raw.githubusercontent.com/jungla-team/junglebot/master/requirements.txt
-    REQUERIMENTS=$DIR_TMP/$CARPETA/requirements.txt
-	wget $URL_REQ -O $REQUERIMENTS --no-check-certificate
-	
-	if [ -f  $REQUERIMENTS ];
-	then
-		if [ -f /etc/vtiversion.info ];
-		then
-			echo "Instalando requisitos pip..."
-			PIP="/opt/bin/pip"
-		else
-			if [ -f /usr/bin/pip ];
-			then
-				echo "Instalando requisitos pip..."
-				PIP="/usr/bin/pip"
-			fi
-		fi
-		$PIP install -r $REQUERIMENTS 
-	else
-		echo "No se ha podido descargar el fichero: ${REQUERIMENTS}"
-	fi
-}
-
 instalar_paquetes(){
 	if [ ! -f /usr/bin/rsync ];
 	then
@@ -133,21 +109,6 @@ instalar_paquetes(){
 		paquete="curl"
 		opkg update
 		opkg install $paquete
-	fi
-}
-
-actualizar_fichero_bot() {
-	if [ "$CAMBIOS" -eq 1 ]
-	then
-		parar_proceso $DAEMON
-		cp $DIR_TMP/$CARPETA/$FICHERO $DESTINO/$FICHERO
-		chmod +x $DESTINO/$FICHERO
-		rm -f $DESTINO/parametros.pyo
-		arranca_proceso $DAEMON "junglebot"
-		MENSAJE="Actualizacion automatica realizada sobre el bot de jungla-team"
-		enviar_telegram "${MENSAJE}"
-	else
-		echo "No hay cambios en el bot"
 	fi
 }
 
@@ -198,7 +159,8 @@ arranca_proceso() {
 enviar_telegram(){
 	PARAM=parametros.py
 	DEST=/usr/bin/junglebot
-	if [ -f $DEST/$PARAM ];
+	BOT_ACTIVO=$(ps -A | grep bot.py | wc -l)
+	if [ "$BOT_ACTIVO" -gt 0 ];
 	then
 		TOKEN=$(cat ${DEST}/parametros.py | grep BOT_TOKEN | cut -d'"' -f2 | tr -d '[[:space:]]')
 		ID=$(cat ${DEST}/parametros.py | grep CHAT_ID | cut -d'=' -f2 | cut -d'#' -f1 | tr -d '[[:space:]]')
@@ -568,27 +530,6 @@ then
 	limpiar_dir_tmp
 	borrar_fichero "${DIR_TMP}/rsync_canales.log"
 	borrar_fichero "${DIR_TMP}/rsync_picons.log"
-fi
-
-#### Para actualizar junglebot #####
-
-URL=https://raw.githubusercontent.com/jungla-team/junglebot/master/bot.py
-CARPETA=junglebot
-DESTINO=/usr/bin/$CARPETA
-FICHERO=bot.py
-DAEMON=$DESTINO/$FICHERO
-DIR_TMP=/tmp
-
-if [ -f $DESTINO/$FICHERO ];
-then
-	crear_dir_tmp
-	wget_github_file
-	instalar_paquetes
-	instalar_librerias_pip
-	diferencias_fichero
-	actualizar_fichero_bot
-else
-	echo "El bot no esta instalado asi que no hago nada"
 fi
 
 #### Para actualizar lista de canales #####
