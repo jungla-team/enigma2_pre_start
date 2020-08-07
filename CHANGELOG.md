@@ -1,5 +1,10 @@
 # Changelog
 
+## [3.5] - 07-08-2020
+
+- Quitada la opción de actualización del junglebot, ya que el bot se puede actualizar con el propio bot y vía ipk
+- Envío de mensajes al bot únicamente si el bot está activo
+
 ## [3.4] - 02-07-2020
 
 - Añadida mejora para controlar el espacio tanto en /tmp como en la ruta donde se tengan los picons. Si no hubiera disponibles 30MB no descarga los picons
