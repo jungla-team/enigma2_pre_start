@@ -1,5 +1,10 @@
 # Changelog
 
+## [4.0] - 10-08-2020
+
+- Ampliación del margen de espacio para la descarga de picons en el caso de no tener disco hdd ni usb montados 
+- Añadido parámetro PICONS en el fichero de configuración (enigma2_pre_start.conf) para descarga de picons (0 - descarga lista únicamente, 1 - lista y picons)
+
 ## [3.5] - 07-08-2020
 
 - Quitada la opción de actualización del junglebot, ya que el bot se puede actualizar con el propio bot y vía ipk
