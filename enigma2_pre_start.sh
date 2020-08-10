@@ -1,10 +1,10 @@
 #!/bin/bash
 # Provides: jungle-team
 # Description: JungleScript para actualizaciones de lista de canales y de picons del equipo jungle-team
-# Version: 3.5
-# Date: 07/08/2020 
+# Version: 4.0
+# Date: 10/08/2020 
 
-VERSION=3.5
+VERSION=4.0
 LOGFILE=/tmp/enigma2_pre_start.log
 exec 1> $LOGFILE 2>&1
 set -x
@@ -112,7 +112,7 @@ instalar_paquetes(){
 	fi
 }
 
-actualizar_fichero_junglescript() {
+actualizar_junglescript() {
 	if [ "$CAMBIOS" -eq 1 ]
 	then
 		MENSAJE="Actualizacion automatica realizada sobre jungleScript"
@@ -495,7 +495,15 @@ merge_lamedb() {
 }
 
 comprobar_espacio(){
-    umbral=30000
+	hdd_montado=$(mount | grep hdd | wc -l)
+	usb_montado=$(mount | grep usb | wc -l)
+	if [ "$hdd_montado" -eq 0 ] && [ "$usb_montado" -eq 0 ];
+	then
+		umbral=60000
+	else
+		umbral=30000
+	fi
+	
     espacio_libre_tmp=$(df -k /tmp | awk '{ print $4 }' | tail -1)
 	if [ $espacio_libre_tmp -gt $umbral ]; 
 	then
@@ -517,32 +525,29 @@ comprobar_espacio(){
 	fi	
 }
 
-#### Incluir en el log la versión de JungleScript que está usando
-echo "Versión JungleScript: ${VERSION}"
+cargar_variables_conf(){
+	DIR_USR=/usr/bin
+	FICH_CONFIG=$DIR_USR/enigma2_pre_start.conf
+	if [ ! -f $FICH_CONFIG ];
+	then
+		echo "LISTACANALES=astra" > $FICH_CONFIG
+		echo "PICONS=0" >> $FICH_CONFIG
+	else
+		existe_listacanales=$(grep -i LISTACANALES ${FICH_CONFIG} | wc -l)
+		existe_picons=$(grep -i PICONS ${FICH_CONFIG} | wc -l)
+		if [ "$existe_listacanales" -eq 0 ];
+		then
+			echo "LISTACANALES=astra" >> $FICH_CONFIG
+		fi
+		if [ "$existe_picons" -eq 0 ];
+		then
+			echo "PICONS=0" >> $FICH_CONFIG
+		fi
+	fi
+	. $FICH_CONFIG
+}
 
-#### Limpieza en DIR_TMP + rsync_canales.log + rsync_picons.log
-
-DIR_TMP=/tmp
-
-if [ ! -z "${DIR_TMP}" ];
-then
-	echo "Limpiando ${DIR_TMP}"
-	limpiar_dir_tmp
-	borrar_fichero "${DIR_TMP}/rsync_canales.log"
-	borrar_fichero "${DIR_TMP}/rsync_picons.log"
-fi
-
-#### Para actualizar lista de canales #####
-
-DIR_USR=/usr/bin
-if [ ! -f $DIR_USR/enigma2_pre_start.conf ];
-then
-	URL=https://github.com/jungla-team/setting_lince_astra/archive/master.zip
-	URL_ACTUALIZACION=https://raw.githubusercontent.com/jungla-team/setting_lince_astra/master/actualizacion
-	CARPETA=setting_lince_astra
-	echo "LISTACANALES=astra" > $DIR_USR/enigma2_pre_start.conf
-else
-	. $DIR_USR/enigma2_pre_start.conf
+actualizar_listacanales(){
 	case "$LISTACANALES" in
 	'astra')
 		URL=https://github.com/jungla-team/setting_lince_astra/archive/master.zip
@@ -565,18 +570,29 @@ else
 		CARPETA=setting_lince_astra
 		;;
 	esac
-fi
 
-DESTINO=/etc/enigma2
-DIR_TMP=/tmp
-ZIP=$CARPETA.zip
+	DESTINO=/etc/enigma2
+	DIR_TMP=/tmp
+	ZIP=$CARPETA.zip
 
-if [ -f $DESTINO/actualizacion ];
-then
-	FICHERO_ACTUALIZACION=$DESTINO/actualizacion
-	diff_github_actualizacion
-	if [ "${ACTUALIZACION}" == "YES" ];
+	if [ -f $DESTINO/actualizacion ];
 	then
+		FICHERO_ACTUALIZACION=$DESTINO/actualizacion
+		diff_github_actualizacion
+		if [ "${ACTUALIZACION}" == "YES" ];
+		then
+			crear_dir_tmp
+			wget_github_zip $URL
+			descomprimir_zip
+			renombrar_carpeta
+			merge_lamedb
+			instalar_paquetes
+			diferencias_canales
+		else
+			echo "No hay cambios en canales"
+		fi
+	else
+		echo "No existe fichero de actualizacion de canales, asi que fuerzo la actualizacion de canales"
 		crear_dir_tmp
 		wget_github_zip $URL
 		descomprimir_zip
@@ -584,90 +600,115 @@ then
 		merge_lamedb
 		instalar_paquetes
 		diferencias_canales
-	else
-		echo "No hay cambios en canales"
 	fi
-else
-	echo "No existe fichero de actualizacion de canales, asi que fuerzo la actualizacion de canales"
-	crear_dir_tmp
-	wget_github_zip $URL
-	descomprimir_zip
-	renombrar_carpeta
-	merge_lamedb
-	instalar_paquetes
-	diferencias_canales
+}
+
+actualizar_picons(){
+	if [ "$PICONS" -eq 1 ];
+	then
+		URL=http://tropical.jungle-team.online/picon-movistar/archive/master.zip
+		CARPETA=picon-movistar
+		DIR_TMP=/tmp
+		ZIP=$CARPETA.zip
+					
+		buscar_picons
+		if [ ! -z "${RUTA_PICONS}" ];
+		then
+			if [ -f "${RUTA_PICONS}/actualizacion" ];
+			then
+				URL_ACTUALIZACION=https://raw.githubusercontent.com/jungla-team/picon-movistar/master/movistar-original/actualizacion
+				FICHERO_ACTUALIZACION=$RUTA_PICONS/actualizacion
+				diff_github_actualizacion
+				if [ "${ACTUALIZACION}" == "YES" ];
+				then
+					comprobar_espacio
+					if [ "${ESPACIO_TMP}" = "OK" ] && [ "${ESPACIO_PICONS}" = "OK" ];
+					then
+						crear_dir_tmp
+						wget_github_zip $URL
+						descomprimir_zip
+						renombrar_carpeta
+						instalar_paquetes
+						diferencias_picons
+						redimensionamiento_picons
+					else
+						echo "No hay espacio libre en /tmp o en en ${RUTA_PICONS} para descargar los picons. Hay que revisar"
+					fi
+				else
+					echo "No hay cambios en picons"
+				fi
+			else
+				echo "No existe fichero de actualizacion de picons, asi que fuerzo la actualizacion de picons"
+				comprobar_espacio
+				if [ "${ESPACIO_TMP}" = "OK" ] && [ "${ESPACIO_PICONS}" = "OK" ];
+				then
+					crear_dir_tmp
+					wget_github_zip $URL
+					descomprimir_zip
+					renombrar_carpeta
+					instalar_paquetes
+					diferencias_picons
+					redimensionamiento_picons
+				else
+					echo "No hay espacio libre en /tmp o en en ${RUTA_PICONS} para descargar los picons. Hay que revisar"
+				fi
+			fi
+		else
+			echo "No existe ninguna ruta con picons, asi que no actualizo"
+		fi
+	else
+		echo "Variable PICONS=0, asi que no actualizo los picons"
+	fi
+}
+
+pre_actualizar_junglescript(){
+	URL=https://raw.githubusercontent.com/jungla-team/enigma2_pre_start/master/enigma2_pre_start.sh
+	CARPETA=junglescript
+	DESTINO=/usr/bin
+	FICHERO=enigma2_pre_start.sh
+	DAEMON=$DESTINO/$FICHERO
+	DIR_TMP=/tmp
+	unset ZIP
+
+	if [ -f $DESTINO/$FICHERO ];
+	then
+		crear_dir_tmp
+		wget_github_file
+		instalar_paquetes
+		diferencias_fichero
+	fi
+}
+
+#### Incluir en el log la versión de JungleScript que está usando
+echo "Versión JungleScript: ${VERSION}"
+
+#### Limpieza en DIR_TMP + rsync_canales.log + rsync_picons.log
+
+DIR_TMP=/tmp
+
+if [ ! -z "${DIR_TMP}" ];
+then
+	echo "Limpiando ${DIR_TMP}"
+	limpiar_dir_tmp
+	borrar_fichero "${DIR_TMP}/rsync_canales.log"
+	borrar_fichero "${DIR_TMP}/rsync_picons.log"
 fi
+
+#### Cargar variables del fichero de configuracion #####
+
+cargar_variables_conf
+
+#### Para actualizar lista de canales #####
+
+actualizar_listacanales
 
 #### Para actualizar picons #####
 
-URL=http://tropical.jungle-team.online/picon-movistar/archive/master.zip
-CARPETA=picon-movistar
-DIR_TMP=/tmp
-ZIP=$CARPETA.zip
-			
-buscar_picons
-if [ ! -z "${RUTA_PICONS}" ];
-then
-	if [ -f "${RUTA_PICONS}/actualizacion" ];
-	then
-		URL_ACTUALIZACION=https://raw.githubusercontent.com/jungla-team/picon-movistar/master/movistar-original/actualizacion
-		FICHERO_ACTUALIZACION=$RUTA_PICONS/actualizacion
-		diff_github_actualizacion
-		if [ "${ACTUALIZACION}" == "YES" ];
-		then
-            comprobar_espacio
-			if [ "${ESPACIO_TMP}" = "OK" ] && [ "${ESPACIO_PICONS}" = "OK" ];
-			then
-				crear_dir_tmp
-				wget_github_zip $URL
-				descomprimir_zip
-				renombrar_carpeta
-				instalar_paquetes
-				diferencias_picons
-				redimensionamiento_picons
-			else
-				echo "No hay espacio libre en /tmp o en en ${RUTA_PICONS} para descargar los picons. Hay que revisar"
-			fi
-		else
-			echo "No hay cambios en picons"
-		fi
-	else
-		echo "No existe fichero de actualizacion de picons, asi que fuerzo la actualizacion de picons"
-		comprobar_espacio
-		if [ "${ESPACIO_TMP}" = "OK" ] && [ "${ESPACIO_PICONS}" = "OK" ];
-		then
-			crear_dir_tmp
-			wget_github_zip $URL
-			descomprimir_zip
-			renombrar_carpeta
-			instalar_paquetes
-			diferencias_picons
-			redimensionamiento_picons
-		else
-			echo "No hay espacio libre en /tmp o en en ${RUTA_PICONS} para descargar los picons. Hay que revisar"
-		fi
-	fi
-else
-	echo "No existe ninguna ruta con picons, asi que no actualizo"
-fi
+actualizar_picons
 
-#### Para actualizar junglescript #####
+#### Para realizar tareas previas a actualizar junglescript #####
 
-URL=https://raw.githubusercontent.com/jungla-team/enigma2_pre_start/master/enigma2_pre_start.sh
-CARPETA=junglescript
-DESTINO=/usr/bin
-FICHERO=enigma2_pre_start.sh
-DAEMON=$DESTINO/$FICHERO
-DIR_TMP=/tmp
-unset ZIP
-
-if [ -f $DESTINO/$FICHERO ];
-then
-	crear_dir_tmp
-	wget_github_file
-	instalar_paquetes
-	diferencias_fichero
-fi
+pre_actualizar_junglescript
 
 #### Limpieza en DIR_TMP
 
@@ -679,5 +720,5 @@ fi
 
 #### Como ultima instruccion meto la propia actualizacion de JungleScript
 
-actualizar_fichero_junglescript
+actualizar_junglescript
 
