@@ -1,10 +1,10 @@
 #!/bin/bash
 # Provides: jungle-team
 # Description: JungleScript para actualizaciones de lista de canales y de picons del equipo jungle-team
-# Version: 4.0
-# Date: 10/08/2020 
+# Version: 4.1
+# Date: 14/08/2020 
 
-VERSION=4.0
+VERSION=4.1
 LOGFILE=/tmp/enigma2_pre_start.log
 exec 1> $LOGFILE 2>&1
 set -x
@@ -333,14 +333,15 @@ diferencias_picons() {
 	buscar_picons
 	TIPO_PICON=movistar-original
 	rsync -aiv $DIR_TMP/$CARPETA/$TIPO_PICON/* $RUTA_PICONS --log-file=$DIR_TMP/$LOG_RSYNC_PICONS
-    CAMBIOS_RSYNC=$(grep -i "+++++++++" $DIR_TMP/$LOG_RSYNC_PICONS)
-	if [ ! -z "${CAMBIOS_RSYNC}" ];
+    CAMBIOS_RSYNC_1=$(grep -i "f+++++++++" $DIR_TMP/$LOG_RSYNC_PICONS | wc -l)
+	CAMBIOS_RSYNC_2=$(grep -i "f.st......" $DIR_TMP/$LOG_RSYNC_PICONS | wc -l)
+	if [ "${CAMBIOS_RSYNC_1}" -gt 0 ] || [ "${CAMBIOS_RSYNC_2}" -gt 0 ];
 	then
 		MENSAJE="Actualizacion automatica realizada sobre los picons ${RUTA_PICONS}"
 		enviar_telegram "${MENSAJE}"
 		echo $MENSAJE
 	else
-		echo "CAMBIOS_RSYNC esta vacía"
+		echo "No hay cambios en los picons"
 	fi
 }
 
