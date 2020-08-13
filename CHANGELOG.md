@@ -1,5 +1,9 @@
 # Changelog
 
+## [4.1] - 14-08-2020
+
+- Fix en la sincronización de los picons cuando hay novedades
+
 ## [4.0] - 10-08-2020
 
 - Ampliación del margen de espacio para la descarga de picons en el caso de no tener disco hdd ni usb montados 
