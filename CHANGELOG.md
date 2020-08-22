@@ -2,7 +2,7 @@
 
 ## [4.2] - 14-08-2020
 
-Eliminación en el fichero de configuración de retornos de carro de Windows y líneas en blanco
+- Eliminación en el fichero de configuración de retornos de carro de Windows y líneas en blanco
 
 ## [4.1] - 14-08-2020
 
