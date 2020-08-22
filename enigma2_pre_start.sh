@@ -1,8 +1,8 @@
 #!/bin/bash
 # Provides: jungle-team
 # Description: JungleScript para actualizaciones de lista de canales y de picons del equipo jungle-team
-# Version: 4.1
-# Date: 14/08/2020 
+# Version: 4.2
+# Date: 22/08/2020 
 
 VERSION=4.1
 LOGFILE=/tmp/enigma2_pre_start.log
@@ -544,6 +544,8 @@ cargar_variables_conf(){
 		then
 			echo "PICONS=0" >> $FICH_CONFIG
 		fi
+		sed -i 's/\r//g' $FICH_CONFIG
+		sed -i '/^\s*$/d' $FICH_CONFIG
 	fi
 	. $FICH_CONFIG
 }
