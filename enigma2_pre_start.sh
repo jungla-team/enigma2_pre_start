@@ -4,7 +4,7 @@
 # Version: 4.2
 # Date: 22/08/2020 
 
-VERSION=4.1
+VERSION=4.2
 LOGFILE=/tmp/enigma2_pre_start.log
 exec 1> $LOGFILE 2>&1
 set -x
