@@ -664,7 +664,7 @@ actualizar_picons(){
 }
 
 pre_actualizar_junglescript(){
-	URL=https://raw.githubusercontent.com/jungle-team/enigma2_pre_start/master/enigma2_pre_start.sh
+	URL=https://raw.githubusercontent.com/jungla-team/enigma2_pre_start/master/enigma2_pre_start.sh
 	CARPETA=junglescript
 	DESTINO=/usr/bin
 	FICHERO=enigma2_pre_start.sh
