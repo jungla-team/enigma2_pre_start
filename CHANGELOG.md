@@ -1,5 +1,9 @@
 # Changelog
 
+## [4.3] - 07-09-2020
+
+- Mejora en la comprobación/corrección del fichero de configuración
+
 ## [4.2] - 14-08-2020
 
 - Eliminación en el fichero de configuración de retornos de carro de Windows y líneas en blanco
