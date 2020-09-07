@@ -1,10 +1,10 @@
 #!/bin/bash
 # Provides: jungle-team
 # Description: JungleScript para actualizaciones de lista de canales y de picons del equipo jungle-team
-# Version: 4.2
-# Date: 22/08/2020 
+# Version: 4.3
+# Date: 07/09/2020 
 
-VERSION=4.2
+VERSION=4.3
 LOGFILE=/tmp/enigma2_pre_start.log
 exec 1> $LOGFILE 2>&1
 set -x
@@ -420,6 +420,7 @@ limpiar_dir_tmp() {
 		borrar_fichero "${DIR_TMP}/picon-movistar.zip"
 		borrar_fichero "${DIR_TMP}/exclude_fav.txt"
 		borrar_fichero "${DIR_TMP}/excludes.txt"
+		borrar_fichero "${DIR_TMP}/enigma2_pre_start.conf.tmp"
 	fi
 }
 
@@ -529,23 +530,21 @@ comprobar_espacio(){
 cargar_variables_conf(){
 	DIR_USR=/usr/bin
 	FICH_CONFIG=$DIR_USR/enigma2_pre_start.conf
+	FICH_CONFIG_TMP=$DIR_TMP/enigma2_pre_start.conf.tmp
 	if [ ! -f $FICH_CONFIG ];
 	then
-		echo "LISTACANALES=astra" > $FICH_CONFIG
-		echo "PICONS=0" >> $FICH_CONFIG
+		echo -e "LISTACANALES=astra\nPICONS=0" > $FICH_CONFIG
 	else
-		existe_listacanales=$(grep -i LISTACANALES ${FICH_CONFIG} | wc -l)
-		existe_picons=$(grep -i PICONS ${FICH_CONFIG} | wc -l)
-		if [ "$existe_listacanales" -eq 0 ];
+		grep -v -e '^[[:space:]]*$' $FICH_CONFIG > $FICH_CONFIG_TMP
+		cp $FICH_CONFIG_TMP $FICH_CONFIG
+		num_lineas_fich_config=$(cat ${FICH_CONFIG} | wc -l)
+		if [ "$num_lineas_fich_config" -lt 2 ];
 		then
-			echo "LISTACANALES=astra" >> $FICH_CONFIG
+			echo "Recreando fichero de config porque no tenía dos líneas"
+			echo -e "LISTACANALES=astra\nPICONS=0" > $FICH_CONFIG
 		fi
-		if [ "$existe_picons" -eq 0 ];
-		then
-			echo "PICONS=0" >> $FICH_CONFIG
-		fi
-		sed -i 's/\r//g' $FICH_CONFIG
-		sed -i '/^\s*$/d' $FICH_CONFIG
+		echo "Aplicando dos2unix al fichero de config por si acaso"
+		/usr/bin/dos2unix $FICH_CONFIG
 	fi
 	. $FICH_CONFIG
 }
@@ -665,7 +664,7 @@ actualizar_picons(){
 }
 
 pre_actualizar_junglescript(){
-	URL=https://raw.githubusercontent.com/jungla-team/enigma2_pre_start/master/enigma2_pre_start.sh
+	URL=https://raw.githubusercontent.com/jungle-team/enigma2_pre_start/master/enigma2_pre_start.sh
 	CARPETA=junglescript
 	DESTINO=/usr/bin
 	FICHERO=enigma2_pre_start.sh
