@@ -1,8 +1,9 @@
 # Changelog
 
-## [4.3] - 07-09-2020
+## [4.3] - 08-09-2020
 
 - Mejora en la comprobación/corrección del fichero de configuración
+- Corrección en el aviso de espacio ocupado en la ruta donde están instalados los picons
 
 ## [4.2] - 14-08-2020
 
