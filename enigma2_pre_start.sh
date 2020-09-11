@@ -2,7 +2,7 @@
 # Provides: jungle-team
 # Description: JungleScript para actualizaciones de lista de canales y de picons del equipo jungle-team
 # Version: 4.3
-# Date: 08/09/2020 
+# Date: 11/09/2020 
 
 VERSION=4.3
 LOGFILE=/tmp/enigma2_pre_start.log
@@ -664,7 +664,7 @@ actualizar_picons(){
 }
 
 pre_actualizar_junglescript(){
-	URL=https://raw.githubusercontent.com/jungle-team/enigma2_pre_start/master/enigma2_pre_start.sh
+	URL=https://raw.githubusercontent.com/jungla-team/enigma2_pre_start/master/enigma2_pre_start.sh
 	CARPETA=junglescript
 	DESTINO=/usr/bin
 	FICHERO=enigma2_pre_start.sh
