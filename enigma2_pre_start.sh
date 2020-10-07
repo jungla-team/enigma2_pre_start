@@ -1,10 +1,10 @@
 #!/bin/bash
 # Provides: jungle-team
 # Description: JungleScript para actualizaciones de lista de canales y de picons del equipo jungle-team
-# Version: 4.3
-# Date: 11/09/2020 
+# Version: 4.4
+# Date: 07/10/2020 
 
-VERSION=4.3
+VERSION=4.4
 LOGFILE=/tmp/enigma2_pre_start.log
 exec 1> $LOGFILE 2>&1
 set -x
@@ -162,7 +162,7 @@ enviar_telegram(){
 	BOT_ACTIVO=$(ps -A | grep bot.py | wc -l)
 	if [ "$BOT_ACTIVO" -gt 0 ];
 	then
-		TOKEN=$(cat ${DEST}/parametros.py | grep BOT_TOKEN | cut -d'"' -f2 | tr -d '[[:space:]]')
+		TOKEN=$(cat ${DEST}/parametros.py | grep BOT_TOKEN | cut -d'=' -f2 | tr -d '[[:space:]]')
 		ID=$(cat ${DEST}/parametros.py | grep CHAT_ID | cut -d'=' -f2 | cut -d'#' -f1 | tr -d '[[:space:]]')
 		URL="https://api.telegram.org/bot$TOKEN/sendMessage"
 		MSJ=$1
