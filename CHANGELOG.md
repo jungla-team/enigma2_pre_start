@@ -1,5 +1,10 @@
 # Changelog
 
+## [4.4] - 07/10/2020
+
+- Mejora en la comprobación de versión
+- Mejora para el envío de mensajes de telegram
+
 ## [4.3] - 08-09-2020
 
 - Mejora en la comprobación/corrección del fichero de configuración
