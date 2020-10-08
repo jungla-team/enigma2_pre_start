@@ -1,6 +1,6 @@
 # enigma2_pre_start
 
-Se usa este script para actualizaciones del bot, de canales y de picons del proyecto de https://jungle-team.com/
+Se usa este script para actualizaciones de canales y de picons del proyecto de https://jungle-team.com/
 
 Para poder usarlo lo único que hay que hacer es:
 
