@@ -1,11 +1,11 @@
 #!/bin/bash
 # Provides: jungle-team
 # Description: JungleScript para actualizaciones de lista de canales y de picons del equipo jungle-team
-# Version: 4.4
-# Date: 07/10/2020 
+# Version: 4.5
+# Date: 15/10/2020 
 
-VERSION=4.4
-LOGFILE=/tmp/enigma2_pre_start.log
+VERSION=4.5
+LOGFILE=/var/log/enigma2_pre_start.log
 exec 1> $LOGFILE 2>&1
 set -x
 
@@ -77,12 +77,12 @@ instalar_paquetes(){
 			if [ "$arm" ]; 
 			then
 				echo "instalando rsync para ARM"
-				URL_IPK=https://github.com/jungla-team/rsync-enigma2/raw/master/enigma2_plugin_systemplugins_rsync_3.ipk
+				URL_IPK=http://tropical.jungle-team.online/utilidades/enigma2_plugin_systemplugins_rsync_3.ipk
 				FILE_IPK=enigma2_plugin_systemplugins_rsync_3.ipk
 				instalar_ipk
             else
 				echo "instalando rsync para MIPS"
-				URL_IPK=https://github.com/jungla-team/rsync-enigma2/raw/master/rsync_3.0.9-r0_mips32el.ipk
+				URL_IPK=http://tropical.jungle-team.online/utilidades/rsync_3.0.9-r0_mips32el.ipk
 				FILE_IPK=rsync_3.0.9-r0_mips32el.ipk
 				instalar_ipk
 			fi
@@ -331,7 +331,6 @@ buscar_picons() {
 diferencias_picons() {
 	LOG_RSYNC_PICONS=rsync_picons.log
 	buscar_picons
-	TIPO_PICON=movistar-original
 	rsync -aiv $DIR_TMP/$CARPETA/$TIPO_PICON/* $RUTA_PICONS --log-file=$DIR_TMP/$LOG_RSYNC_PICONS
     CAMBIOS_RSYNC_1=$(grep -i "f+++++++++" $DIR_TMP/$LOG_RSYNC_PICONS | wc -l)
 	CAMBIOS_RSYNC_2=$(grep -i "f.st......" $DIR_TMP/$LOG_RSYNC_PICONS | wc -l)
@@ -351,7 +350,7 @@ redimensionamiento_picons() {
 		echo "Redimendionsando picons en sistema Blackhole"
 		opkg update
 		opkg install python-imaging
-		URL=https://raw.githubusercontent.com/jungla-team/resize_picons/master/resizepicon.py
+		URL=http://tropical.jungle-team.online/utilidades/resizepicon.py
 		CARPETA=/usr/bin/
 		FICHERO=resizepicon.py
 		wget $URL -O $CARPETA/$FICHERO --no-check-certificate
@@ -367,25 +366,9 @@ redimensionamiento_picons() {
     fi
 }
 
-wget_github_zip() {
-	if [[ $1 =~ ^-+h(elp)?$ ]] ; then
-		printf "%s\n" "Downloads a github snapshot of a master branch.\nSupports input URLs of the forms */repo_name, *.git, and */master.zip"
-		return
-	fi
-	if [[ ${1} =~ /archive/master.zip$ ]] ; then
-		download=${1}
-		out_file=${1/\/archive\/master.zip}
-		out_file=${out_file##*/}.zip
-	elif [[ ${1} =~ .git$ ]] ; then
-		out_file=${1/%.git}
-		download=${out_file}/archive/master.zip
-		out_file=${out_file##*/}.zip
-	else
-		out_file=${1/%\/} # remove trailing '/'
-		download=${out_file}/archive/master.zip
-		out_file=${out_file##*/}.zip
-	fi
-	wget -c ${download} -O $DIR_TMP/${out_file} --no-check-certificate
+wget_zip() {
+	download=${1}
+	wget -c ${download} -O $DIR_TMP/$ZIP --no-check-certificate
 	if [ $? -ne 0 ];
 	then
 		echo "Errores al descargar $download"
@@ -393,7 +376,7 @@ wget_github_zip() {
 	fi
 }
 
-wget_github_file() {
+wget_file() {
 	wget $URL -O $DIR_TMP/$CARPETA/$FICHERO --no-check-certificate
 	if [ $? -eq 0 ];
 	then
@@ -412,12 +395,12 @@ limpiar_dir_tmp() {
 		borrar_directorio "${DIR_TMP}/setting_lince_astra"
 		borrar_directorio "${DIR_TMP}/setting_lince_astra_hotbird"
 		borrar_directorio "${DIR_TMP}/setting_astra_comunitaria"
-		borrar_directorio "${DIR_TMP}/picon-movistar"
+		borrar_directorio "${DIR_TMP}/picon-movistar-master"
 		borrar_fichero "${DIR_TMP}/MovistarPlus-Astra.zip"
 		borrar_fichero "${DIR_TMP}/setting_lince_astra.zip"
 		borrar_fichero "${DIR_TMP}/setting_lince_astra_hotbird.zip"
 		borrar_fichero "${DIR_TMP}/setting_astra_comunitaria.zip"
-		borrar_fichero "${DIR_TMP}/picon-movistar.zip"
+		borrar_fichero "${DIR_TMP}/movistar-*.zip"
 		borrar_fichero "${DIR_TMP}/exclude_fav.txt"
 		borrar_fichero "${DIR_TMP}/excludes.txt"
 		borrar_fichero "${DIR_TMP}/enigma2_pre_start.conf.tmp"
@@ -440,7 +423,7 @@ borrar_directorio() {
 	fi
 }
 
-diff_github_actualizacion(){
+diff_actualizacion(){
 	actualizacion=$(cat ${FICHERO_ACTUALIZACION} 2>/dev/null)
 	instalada=$(curl -k -s ${URL_ACTUALIZACION} 2>/dev/null)
 
@@ -501,9 +484,9 @@ comprobar_espacio(){
 	usb_montado=$(mount | grep usb | wc -l)
 	if [ "$hdd_montado" -eq 0 ] && [ "$usb_montado" -eq 0 ];
 	then
-		umbral=60000
-	else
 		umbral=30000
+	else
+		umbral=15000
 	fi
 	
     espacio_libre_tmp=$(df -k /tmp | awk '{ print $4 }' | tail -1)
@@ -533,15 +516,30 @@ cargar_variables_conf(){
 	FICH_CONFIG_TMP=$DIR_TMP/enigma2_pre_start.conf.tmp
 	if [ ! -f $FICH_CONFIG ];
 	then
-		echo -e "LISTACANALES=astra\nPICONS=0" > $FICH_CONFIG
+		echo -e "LISTACANALES=astra\nPICONS=0\nTIPOPICON=movistar-original" > $FICH_CONFIG
 	else
 		grep -v -e '^[[:space:]]*$' $FICH_CONFIG > $FICH_CONFIG_TMP
 		cp $FICH_CONFIG_TMP $FICH_CONFIG
 		num_lineas_fich_config=$(cat ${FICH_CONFIG} | wc -l)
-		if [ "$num_lineas_fich_config" -lt 2 ];
+		if [ "$num_lineas_fich_config" -lt 3 ];
 		then
-			echo "Recreando fichero de config porque no tenía dos líneas"
-			echo -e "LISTACANALES=astra\nPICONS=0" > $FICH_CONFIG
+		    lista_canales_conf=$(grep -i LISTACANALES ${FICH_CONFIG} | cut -d'=' -f2)
+			if [ ! "$lista_canales_conf" ];
+			then
+				lista_canales_conf=astra
+			fi
+			picons_conf=$(grep -i PICONS ${FICH_CONFIG} | cut -d'=' -f2)
+			if [ ! "$picons_conf" ];
+			then
+				picons_conf=0
+			fi
+			tipo_picon_conf=$(grep -i TIPOPICON ${FICH_CONFIG} | cut -d'=' -f2)
+			if [ ! "$tipo_picon_conf" ];
+			then
+				tipo_picon_conf=movistar-original
+			fi
+			echo "Recreando fichero de config porque no tenía tres líneas"
+			echo -e "LISTACANALES=${lista_canales_conf}\nPICONS=${picons_conf}\nTIPOPICON=${tipo_picon_conf}" > $FICH_CONFIG
 		fi
 		echo "Aplicando dos2unix al fichero de config por si acaso"
 		/usr/bin/dos2unix $FICH_CONFIG
@@ -552,23 +550,23 @@ cargar_variables_conf(){
 actualizar_listacanales(){
 	case "$LISTACANALES" in
 	'astra')
-		URL=https://github.com/jungla-team/setting_lince_astra/archive/master.zip
-		URL_ACTUALIZACION=https://raw.githubusercontent.com/jungla-team/setting_lince_astra/master/actualizacion
+		URL=http://tropical.jungle-team.online/listas-movistar/archive/setting_lince_astra/master.zip
+		URL_ACTUALIZACION=http://tropical.jungle-team.online/listas-movistar/setting_lince_astra-master/actualizacion
 		CARPETA=setting_lince_astra
 		;;
 	'astra-hotbird')
-		URL=https://github.com/jungla-team/setting_lince_astra_hotbird/archive/master.zip
-		URL_ACTUALIZACION=https://raw.githubusercontent.com/jungla-team/setting_lince_astra_hotbird/master/actualizacion
+		URL=http://tropical.jungle-team.online/listas-movistar/archive/setting_lince_astra_hotbird/master.zip
+		URL_ACTUALIZACION=http://tropical.jungle-team.online/listas-movistar/setting_lince_astra_hotbird-master/actualizacion
 		CARPETA=setting_lince_astra_hotbird
 		;;
 	'astra-comunitaria')
-		URL=https://github.com/jungla-team/setting_astra_comunitaria/archive/master.zip
-		URL_ACTUALIZACION=https://raw.githubusercontent.com/jungla-team/setting_astra_comunitaria/master/actualizacion
+		URL=http://tropical.jungle-team.online/listas-movistar/archive/setting_astra_comunitaria/master.zip
+		URL_ACTUALIZACION=http://tropical.jungle-team.online/listas-movistar/setting_astra_comunitaria-master/actualizacion
 		CARPETA=setting_astra_comunitaria
 		;;
 	'*')
-		URL=https://github.com/jungla-team/setting_lince_astra/archive/master.zip
-		URL_ACTUALIZACION=https://raw.githubusercontent.com/jungla-team/setting_lince_astra/master/actualizacion
+		URL=http://tropical.jungle-team.online/listas-movistar/archive/setting_lince_astra/master.zip
+		URL_ACTUALIZACION=http://tropical.jungle-team.online/listas-movistar/setting_lince_astra-master/actualizacion
 		CARPETA=setting_lince_astra
 		;;
 	esac
@@ -580,11 +578,11 @@ actualizar_listacanales(){
 	if [ -f $DESTINO/actualizacion ];
 	then
 		FICHERO_ACTUALIZACION=$DESTINO/actualizacion
-		diff_github_actualizacion
+		diff_actualizacion
 		if [ "${ACTUALIZACION}" == "YES" ];
 		then
 			crear_dir_tmp
-			wget_github_zip $URL
+			wget_zip $URL
 			descomprimir_zip
 			renombrar_carpeta
 			merge_lamedb
@@ -596,7 +594,7 @@ actualizar_listacanales(){
 	else
 		echo "No existe fichero de actualizacion de canales, asi que fuerzo la actualizacion de canales"
 		crear_dir_tmp
-		wget_github_zip $URL
+		wget_zip $URL
 		descomprimir_zip
 		renombrar_carpeta
 		merge_lamedb
@@ -608,26 +606,39 @@ actualizar_listacanales(){
 actualizar_picons(){
 	if [ "$PICONS" -eq 1 ];
 	then
-		URL=http://tropical.jungle-team.online/picon-movistar/archive/master.zip
-		CARPETA=picon-movistar
-		DIR_TMP=/tmp
-		ZIP=$CARPETA.zip
-					
+	    case "$TIPOPICON" in
+		'movistar-original')
+			TIPO_PICON=movistar-original
+			URL=http://tropical.jungle-team.online/picon-movistar/archive/movistar-original.zip
+		    URL_ACTUALIZACION=http://tropical.jungle-team.online/picon-movistar/picon-movistar-master/movistar-original/actualizacion
+			;;
+		'movistar-lunar')
+			TIPO_PICON=movistar-lunar
+			URL=http://tropical.jungle-team.online/picon-movistar/archive/movistar-lunar.zip
+		    URL_ACTUALIZACION=http://tropical.jungle-team.online/picon-movistar/picon-movistar-master/movistar-lunar/actualizacion
+			;;
+		'*')
+			TIPO_PICON=movistar-original
+			URL=http://tropical.jungle-team.online/picon-movistar/archive/movistar-original.zip
+		    URL_ACTUALIZACION=http://tropical.jungle-team.online/picon-movistar/picon-movistar-master/movistar-original/actualizacion
+			;;
+		esac
+		ZIP="${TIPO_PICON}.zip"
+		CARPETA="picon-movistar-master"
 		buscar_picons
 		if [ ! -z "${RUTA_PICONS}" ];
 		then
 			if [ -f "${RUTA_PICONS}/actualizacion" ];
 			then
-				URL_ACTUALIZACION=https://raw.githubusercontent.com/jungla-team/picon-movistar/master/movistar-original/actualizacion
 				FICHERO_ACTUALIZACION=$RUTA_PICONS/actualizacion
-				diff_github_actualizacion
+				diff_actualizacion
 				if [ "${ACTUALIZACION}" == "YES" ];
 				then
 					comprobar_espacio
 					if [ "${ESPACIO_TMP}" = "OK" ] && [ "${ESPACIO_PICONS}" = "OK" ];
 					then
 						crear_dir_tmp
-						wget_github_zip $URL
+						wget_zip $URL
 						descomprimir_zip
 						renombrar_carpeta
 						instalar_paquetes
@@ -645,7 +656,7 @@ actualizar_picons(){
 				if [ "${ESPACIO_TMP}" = "OK" ] && [ "${ESPACIO_PICONS}" = "OK" ];
 				then
 					crear_dir_tmp
-					wget_github_zip $URL
+					wget_zip $URL
 					descomprimir_zip
 					renombrar_carpeta
 					instalar_paquetes
@@ -664,7 +675,7 @@ actualizar_picons(){
 }
 
 pre_actualizar_junglescript(){
-	URL=https://raw.githubusercontent.com/jungla-team/enigma2_pre_start/master/enigma2_pre_start.sh
+	URL=http://tropical.jungle-team.online/junglescript/enigma2_pre_start.sh
 	CARPETA=junglescript
 	DESTINO=/usr/bin
 	FICHERO=enigma2_pre_start.sh
@@ -675,7 +686,7 @@ pre_actualizar_junglescript(){
 	if [ -f $DESTINO/$FICHERO ];
 	then
 		crear_dir_tmp
-		wget_github_file
+		wget_file
 		instalar_paquetes
 		diferencias_fichero
 	fi
