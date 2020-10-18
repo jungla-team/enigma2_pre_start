@@ -1,5 +1,12 @@
 # Changelog
 
+## [4.5] - 18/10/2020
+
+- Añadido nuevo parametro TIPOPICON para elegir el tipo de picon (TIPOPICON=movistar-original o TIPOPICON=movistar-lunar)
+- Cambiados los umbrales de espacio a 15MB sin disco hdd y a 30MB con disco
+- Mejora en la descarga de los picons para que únicamente decargue los necesarios
+- Cambiadas descargas de todos los ficheros a nuestro server evitando así las descargas desde github
+
 ## [4.4] - 07/10/2020
 
 - Mejora en la comprobación de versión
