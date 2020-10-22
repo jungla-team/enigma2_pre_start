@@ -1,3 +1,0 @@
-#!/bin/sh
-
-chmod +x /usr/bin/enigma2_pre_start.sh
