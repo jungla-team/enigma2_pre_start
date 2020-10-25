@@ -1,11 +1,12 @@
 #!/bin/bash
 # Provides: jungle-team
 # Description: JungleScript para actualizaciones de lista de canales y de picons del equipo jungle-team
-# Version: 4.5
-# Date: 15/10/2020 
+# Version: 4.6
+# Date: 24/10/2020 
 
-VERSION=4.5
+VERSION=4.6
 LOGFILE=/var/log/enigma2_pre_start.log
+URL_TROPICAL=http://tropical.jungle-team.online
 exec 1> $LOGFILE 2>&1
 set -x
 
@@ -77,12 +78,12 @@ instalar_paquetes(){
 			if [ "$arm" ]; 
 			then
 				echo "instalando rsync para ARM"
-				URL_IPK=http://tropical.jungle-team.online/utilidades/enigma2_plugin_systemplugins_rsync_3.ipk
+				URL_IPK=$URL_TROPICAL/utilidades/enigma2_plugin_systemplugins_rsync_3.ipk
 				FILE_IPK=enigma2_plugin_systemplugins_rsync_3.ipk
 				instalar_ipk
             else
 				echo "instalando rsync para MIPS"
-				URL_IPK=http://tropical.jungle-team.online/utilidades/rsync_3.0.9-r0_mips32el.ipk
+				URL_IPK=$URL_TROPICAL/utilidades/rsync_3.0.9-r0_mips32el.ipk
 				FILE_IPK=rsync_3.0.9-r0_mips32el.ipk
 				instalar_ipk
 			fi
@@ -113,15 +114,27 @@ instalar_paquetes(){
 }
 
 actualizar_junglescript() {
-	if [ "$CAMBIOS" -eq 1 ]
+	echo "Instalando ipk JungleScript..."
+	URL_IPK=$URL_TROPICAL/oasis/H2O/junglescript_all.ipk
+	FILE_IPK=junglescript_all.ipk
+	anterior_version_ipk=$(opkg list-installed | grep 'junglescript -' | wc -l)
+	if [ "$anterior_version_ipk" -gt 0 ];
 	then
-		MENSAJE="Actualizacion automatica realizada sobre jungleScript"
-		enviar_telegram "${MENSAJE}"
-		echo "Copiando fichero jungleScript..."
-		cp $DIR_TMP/$CARPETA/$FICHERO $DESTINO/$FICHERO
+		opkg remove junglescript
 	fi
-	echo "Saliendo..."
-	exit 0
+	instalar_ipk
+	salida=$?
+	if [ "$salida" -eq 0 ];
+	then
+		MENSAJE="Actualizacion automatica realizada sobre JungleScript"
+		enviar_telegram "${MENSAJE}"
+	else
+		if [ "$salida" -lt 255 ];
+		then
+			MENSAJE="Problema en la actualizacion automatica realizada sobre JungleScript"
+			enviar_telegram "${MENSAJE}"
+		fi
+	fi
 }
 
 parar_proceso() {
@@ -250,7 +263,7 @@ diferencias_canales() {
 	if [ ! -z "${CAMBIOS_RSYNC}" ];
 	then
 		recargar_lista_canales
-		MENSAJE="Actualizacion automatica realizada sobre los canales ${CARPETA}"
+		MENSAJE="Actualizacion automatica realizada sobre los canales ${LISTACANALES}"
 		enviar_telegram "${MENSAJE}"
 		enviar_mensaje_pantalla "${MENSAJE}"
 		echo $MENSAJE
@@ -331,7 +344,7 @@ buscar_picons() {
 diferencias_picons() {
 	LOG_RSYNC_PICONS=rsync_picons.log
 	buscar_picons
-	rsync -aiv $DIR_TMP/$CARPETA/$TIPO_PICON/* $RUTA_PICONS --log-file=$DIR_TMP/$LOG_RSYNC_PICONS
+	rsync -aiv $DIR_TMP/$CARPETA/* $RUTA_PICONS --log-file=$DIR_TMP/$LOG_RSYNC_PICONS
     CAMBIOS_RSYNC_1=$(grep -i "f+++++++++" $DIR_TMP/$LOG_RSYNC_PICONS | wc -l)
 	CAMBIOS_RSYNC_2=$(grep -i "f.st......" $DIR_TMP/$LOG_RSYNC_PICONS | wc -l)
 	if [ "${CAMBIOS_RSYNC_1}" -gt 0 ] || [ "${CAMBIOS_RSYNC_2}" -gt 0 ];
@@ -350,7 +363,7 @@ redimensionamiento_picons() {
 		echo "Redimendionsando picons en sistema Blackhole"
 		opkg update
 		opkg install python-imaging
-		URL=http://tropical.jungle-team.online/utilidades/resizepicon.py
+		URL=$URL_TROPICAL/utilidades/resizepicon.py
 		CARPETA=/usr/bin/
 		FICHERO=resizepicon.py
 		wget $URL -O $CARPETA/$FICHERO --no-check-certificate
@@ -391,19 +404,16 @@ limpiar_dir_tmp() {
 	if [ -d $DIR_TMP ];
 	then
 		borrar_directorio "${DIR_TMP}/junglebot" 
-		borrar_directorio "${DIR_TMP}/MovistarPlus-Astra" 
-		borrar_directorio "${DIR_TMP}/setting_lince_astra"
-		borrar_directorio "${DIR_TMP}/setting_lince_astra_hotbird"
-		borrar_directorio "${DIR_TMP}/setting_astra_comunitaria"
-		borrar_directorio "${DIR_TMP}/picon-movistar-master"
-		borrar_fichero "${DIR_TMP}/MovistarPlus-Astra.zip"
-		borrar_fichero "${DIR_TMP}/setting_lince_astra.zip"
-		borrar_fichero "${DIR_TMP}/setting_lince_astra_hotbird.zip"
-		borrar_fichero "${DIR_TMP}/setting_astra_comunitaria.zip"
+		borrar_directorio "${DIR_TMP}/Canales-enigma2-main"
+		borrar_directorio "${DIR_TMP}/Picon-enigma2-Movistar-main"
+		borrar_fichero "${DIR_TMP}/Jungle-Astra-19.2.zip.zip"
+		borrar_fichero "${DIR_TMP}/Jungle-Astra19.2-hotbird13.zip"
+		borrar_fichero "${DIR_TMP}/Jungle-Astra-19.2-comunitarias.zip"
 		borrar_fichero "${DIR_TMP}/movistar-*.zip"
 		borrar_fichero "${DIR_TMP}/exclude_fav.txt"
 		borrar_fichero "${DIR_TMP}/excludes.txt"
 		borrar_fichero "${DIR_TMP}/enigma2_pre_start.conf.tmp"
+		borrar_fichero "${DIR_TMP}/junglescript_all.ipk"
 	fi
 }
 
@@ -550,30 +560,33 @@ cargar_variables_conf(){
 actualizar_listacanales(){
 	case "$LISTACANALES" in
 	'astra')
-		URL=http://tropical.jungle-team.online/listas-movistar/archive/setting_lince_astra/master.zip
-		URL_ACTUALIZACION=http://tropical.jungle-team.online/listas-movistar/setting_lince_astra-master/actualizacion
-		CARPETA=setting_lince_astra
+		URL=$URL_TROPICAL/oasis/lista_canales/Jungle-Astra-19.2.zip
+		URL_ACTUALIZACION=$URL_TROPICAL/oasis/lista_canales/astra/etc/enigma2/actualizacion
+		CARPETA=Canales-enigma2-main/Jungle-Astra-19.2/etc/enigma2
+		ZIP=Jungle-Astra-19.2.zip
 		;;
 	'astra-hotbird')
-		URL=http://tropical.jungle-team.online/listas-movistar/archive/setting_lince_astra_hotbird/master.zip
-		URL_ACTUALIZACION=http://tropical.jungle-team.online/listas-movistar/setting_lince_astra_hotbird-master/actualizacion
-		CARPETA=setting_lince_astra_hotbird
+		URL=$URL_TROPICAL/oasis/lista_canales/Jungle-Astra19.2-hotbird13.zip
+		URL_ACTUALIZACION=$URL_TROPICAL/oasis/lista_canales/astra-hotbird/etc/enigma2/actualizacion
+		CARPETA=Canales-enigma2-main/Jungle-Astra19.2-hotbird13/etc/enigma2
+		ZIP=Jungle-Astra19.2-hotbird13.zip
 		;;
 	'astra-comunitaria')
-		URL=http://tropical.jungle-team.online/listas-movistar/archive/setting_astra_comunitaria/master.zip
-		URL_ACTUALIZACION=http://tropical.jungle-team.online/listas-movistar/setting_astra_comunitaria-master/actualizacion
-		CARPETA=setting_astra_comunitaria
+		URL=$URL_TROPICAL/oasis/lista_canales/Jungle-Astra-19.2-comunitarias.zip
+		URL_ACTUALIZACION=$URL_TROPICAL/oasis/lista_canales/astra-comunitarias/etc/enigma2/actualizacion
+		CARPETA=Canales-enigma2-main/Jungle-Astra-19.2-comunitarias/etc/enigma2
+		ZIP=Jungle-Astra-19.2-comunitarias.zip
 		;;
 	'*')
-		URL=http://tropical.jungle-team.online/listas-movistar/archive/setting_lince_astra/master.zip
-		URL_ACTUALIZACION=http://tropical.jungle-team.online/listas-movistar/setting_lince_astra-master/actualizacion
-		CARPETA=setting_lince_astra
+		URL=$URL_TROPICAL/oasis/lista_canales/Jungle-Astra-19.2.zip
+		URL_ACTUALIZACION=$URL_TROPICAL/oasis/lista_canales/astra/etc/enigma2/actualizacion
+		CARPETA=Canales-enigma2-main/Jungle-Astra-19.2/etc/enigma2
+		ZIP=Jungle-Astra-19.2.zip
 		;;
 	esac
 
 	DESTINO=/etc/enigma2
 	DIR_TMP=/tmp
-	ZIP=$CARPETA.zip
 
 	if [ -f $DESTINO/actualizacion ];
 	then
@@ -609,22 +622,24 @@ actualizar_picons(){
 	    case "$TIPOPICON" in
 		'movistar-original')
 			TIPO_PICON=movistar-original
-			URL=http://tropical.jungle-team.online/picon-movistar/archive/movistar-original.zip
-		    URL_ACTUALIZACION=http://tropical.jungle-team.online/picon-movistar/picon-movistar-master/movistar-original/actualizacion
+			URL=$URL_TROPICAL/oasis/picones/jungle_movistar/jungle-picon-Movistar-Transparente.zip
+		    URL_ACTUALIZACION=$URL_TROPICAL/oasis/picones/jungle_movistar/trans/picon/actualizacion
+			CARPETA="Picon-enigma2-Movistar-main/jungle-picon-Movistar-Transparente/picon"
 			;;
 		'movistar-lunar')
 			TIPO_PICON=movistar-lunar
-			URL=http://tropical.jungle-team.online/picon-movistar/archive/movistar-lunar.zip
-		    URL_ACTUALIZACION=http://tropical.jungle-team.online/picon-movistar/picon-movistar-master/movistar-lunar/actualizacion
+			URL=$URL_TROPICAL/oasis/picones/jungle_movistar/jungle-picon-movistar-lunar.zip
+		    URL_ACTUALIZACION=$URL_TROPICAL/oasis/picones/jungle_movistar/black/picon/actualizacion
+			CARPETA="Picon-enigma2-Movistar-main/jungle-picon-Movistar-lunar/picon"
 			;;
 		'*')
 			TIPO_PICON=movistar-original
-			URL=http://tropical.jungle-team.online/picon-movistar/archive/movistar-original.zip
-		    URL_ACTUALIZACION=http://tropical.jungle-team.online/picon-movistar/picon-movistar-master/movistar-original/actualizacion
+			URL=$URL_TROPICAL/oasis/picones/jungle_movistar/jungle-picon-Movistar-Transparente.zip
+		    URL_ACTUALIZACION=$URL_TROPICAL/oasis/picones/jungle_movistar/trans/picon/actualizacion
+			CARPETA="Picon-enigma2-Movistar-main/jungle-picon-Movistar-Transparente/picon"
 			;;
 		esac
 		ZIP="${TIPO_PICON}.zip"
-		CARPETA="picon-movistar-master"
 		buscar_picons
 		if [ ! -z "${RUTA_PICONS}" ];
 		then
@@ -674,24 +689,6 @@ actualizar_picons(){
 	fi
 }
 
-pre_actualizar_junglescript(){
-	URL=http://tropical.jungle-team.online/junglescript/enigma2_pre_start.sh
-	CARPETA=junglescript
-	DESTINO=/usr/bin
-	FICHERO=enigma2_pre_start.sh
-	DAEMON=$DESTINO/$FICHERO
-	DIR_TMP=/tmp
-	unset ZIP
-
-	if [ -f $DESTINO/$FICHERO ];
-	then
-		crear_dir_tmp
-		wget_file
-		instalar_paquetes
-		diferencias_fichero
-	fi
-}
-
 #### Incluir en el log la versión de JungleScript que está usando
 echo "Versión JungleScript: ${VERSION}"
 
@@ -719,9 +716,9 @@ actualizar_listacanales
 
 actualizar_picons
 
-#### Para realizar tareas previas a actualizar junglescript #####
+#### Actualizacion de JungleScript
 
-pre_actualizar_junglescript
+actualizar_junglescript
 
 #### Limpieza en DIR_TMP
 
@@ -731,7 +728,5 @@ then
 	limpiar_dir_tmp
 fi
 
-#### Como ultima instruccion meto la propia actualizacion de JungleScript
-
-actualizar_junglescript
-
+echo "Saliendo..."
+exit 0
