@@ -1,4 +1,4 @@
-Package: enigma2-plugin-extensions-junglescript
+Package: junglescript
 Version: 4.6
 Architecture: all
 Depends: bash
