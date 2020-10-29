@@ -1,10 +1,10 @@
 #!/bin/bash
 # Provides: jungle-team
 # Description: JungleScript para actualizaciones de lista de canales y de picons del equipo jungle-team
-# Version: 4.6
-# Date: 24/10/2020 
+# Version: 4.7
+# Date: 29/10/2020 
 
-VERSION=4.6
+VERSION=4.7
 LOGFILE=/var/log/enigma2_pre_start.log
 URL_TROPICAL=http://tropical.jungle-team.online
 exec 1> $LOGFILE 2>&1
@@ -112,31 +112,6 @@ instalar_paquetes(){
 		opkg install $paquete
 	fi
 }
-
-actualizar_junglescript() {
-	echo "Instalando ipk JungleScript..."
-	URL_IPK=$URL_TROPICAL/oasis/H2O/junglescript_all.ipk
-	FILE_IPK=junglescript_all.ipk
-	anterior_version_ipk=$(opkg list-installed | grep 'junglescript -' | wc -l)
-	if [ "$anterior_version_ipk" -gt 0 ];
-	then
-		opkg remove junglescript
-	fi
-	instalar_ipk
-	salida=$?
-	if [ "$salida" -eq 0 ];
-	then
-		MENSAJE="Actualizacion automatica realizada sobre JungleScript"
-		enviar_telegram "${MENSAJE}"
-	else
-		if [ "$salida" -lt 255 ];
-		then
-			MENSAJE="Problema en la actualizacion automatica realizada sobre JungleScript"
-			enviar_telegram "${MENSAJE}"
-		fi
-	fi
-}
-
 parar_proceso() {
     DEMONIO=$1
 	PROCESO=`ps -ef | grep ${DEMONIO} | grep -v grep | wc -l`
@@ -413,7 +388,6 @@ limpiar_dir_tmp() {
 		borrar_fichero "${DIR_TMP}/exclude_fav.txt"
 		borrar_fichero "${DIR_TMP}/excludes.txt"
 		borrar_fichero "${DIR_TMP}/enigma2_pre_start.conf.tmp"
-		borrar_fichero "${DIR_TMP}/junglescript_all.ipk"
 	fi
 }
 
@@ -686,6 +660,57 @@ actualizar_picons(){
 		fi
 	else
 		echo "Variable PICONS=0, asi que no actualizo los picons"
+	fi
+}
+
+insertar_feed_jungleteam() {
+	feed_jungle_file="/etc/opkg/jungle-feed.conf"
+	if [ ! -f ${feed_jungle_file} ];
+	then
+		wget $URL_TROPICAL/script/jungle-feed.conf -P /etc/opkg/
+	fi
+}
+
+actualizar_junglescript() {
+	echo "Instalando JungleScript..."
+	insertar_feed_jungleteam
+	junglescript_package="enigma2-plugin-extensions-junglescript"
+	hay_junglescript=$(opkg list-installed | grep ${junglescript_package} | wc -l)
+	opkg update
+	if [ "$hay_junglescript" -gt 0 ];
+	then
+		hay_upgrade_junglescript=$(opkg list-upgradable | grep junglecript | wc -l)
+		if [ "$hay_upgrade_junglescript" -gt 0 ];
+		then
+			opkg upgrade $junglescript_package
+			salida=$?
+			if [ "$salida" -eq 0 ];
+			then
+				MENSAJE="Actualizacion automatica realizada sobre JungleScript"
+				enviar_telegram "${MENSAJE}"
+			else
+				if [ "$salida" -lt 255 ];
+				then
+					MENSAJE="Problema en la actualizacion automatica realizada sobre JungleScript"
+					enviar_telegram "${MENSAJE}"
+				fi
+			fi
+		fi
+	else
+		opkg remove junglescript
+		opkg install $junglescript_package
+		salida=$?
+		if [ "$salida" -eq 0 ];
+		then
+			MENSAJE="Actualizacion automatica realizada sobre JungleScript"
+			enviar_telegram "${MENSAJE}"
+		else
+			if [ "$salida" -lt 255 ];
+			then
+					MENSAJE="Problema en la actualizacion automatica realizada sobre JungleScript"
+					enviar_telegram "${MENSAJE}"
+			fi
+		fi
 	fi
 }
 
