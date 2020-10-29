@@ -1,6 +1,6 @@
 # Changelog
 
-## [4.7] - 25/10/2020
+## [4.7] - 29/10/2020
 
 - Añadidas opciones de chequeo y upgrade desde nuestro servidor feed
 
