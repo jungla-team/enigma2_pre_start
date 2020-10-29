@@ -10,7 +10,7 @@ NEW_VERSION=$(eval echo $NEW_VERSION)
 DIR_PKG_BUILD=$DIR_SRC/package
 DIR_PKG_DEST=$DIR_PKG_BUILD/usr/bin
 TYPE="all"
-PKG_NAME=junglescript_${NEW_VERSION}_all
+PKG_NAME=enigma2-plugin-extensions-junglescript_${NEW_VERSION}_all
 
 echo "Building package $PKG_NAME"
 

@@ -1,3 +1,7 @@
 #!/bin/sh
 
 chmod +x /usr/bin/enigma2_pre_start.sh
+if [ ! -f /etc/opkg/jungle-feed.conf ];
+then
+    wget http://tropical.jungle-team.online/script/jungle-feed.conf -P /etc/opkg/
+fi
