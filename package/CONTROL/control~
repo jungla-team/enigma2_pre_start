@@ -1,6 +1,0 @@
-Package: junglescript
-Version: 4.6
-Architecture: all
-Depends: bash
-Maintainer: jungle-team
-Description: JungleScript for enigma2
