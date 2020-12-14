@@ -1,14 +1,13 @@
 #!/bin/bash
 # Provides: jungle-team
 # Description: JungleScript para actualizaciones de lista de canales y de picons del equipo jungle-team
-# Version: 4.7
-# Date: 29/10/2020 
+# Version: 4.8
+# Date: 14/12/2020 
 
-VERSION=4.7
+VERSION=4.8
 LOGFILE=/var/log/enigma2_pre_start.log
 URL_TROPICAL=http://tropical.jungle-team.online
-exec 1> $LOGFILE 2>&1
-set -x
+
 
 crear_dir_tmp() {
 	if [ ! -d $DIR_TMP/$CARPETA ] && [ ! $ZIP ];
@@ -56,7 +55,7 @@ diferencias_fichero() {
 }
 
 instalar_ipk(){
-	wget $URL_IPK -O $DIR_TMP/$FILE_IPK --no-check-certificate
+	curl $URL_IPK -o $DIR_TMP/$FILE_IPK
 
 	if [ -f  $DIR_TMP/$FILE_IPK ]; 
 	then
@@ -66,6 +65,13 @@ instalar_ipk(){
 	else
 		echo "No se ha podido descargar el fichero ipk: $DIR_TMP/$FILE_IPK"
 	fi
+}
+
+instalar_package(){
+	paquete=$1
+	echo "Instalando ${paquete}..."
+	opkg update
+	opkg install $paquete
 }
 
 instalar_paquetes(){
@@ -88,28 +94,16 @@ instalar_paquetes(){
 				instalar_ipk
 			fi
 		else
-			echo "Instalando rsync..."
-			opkg update
-			paquete=$(opkg list | grep rsync | grep tool | awk '{ print $1 }')
-			if [ ! -z "${paquete}" ];
-			then
-				opkg install $paquete
-			fi
+			instalar_package "rsync"
 		fi	
 	fi
 	if [ ! -f /bin/bash ];
 	then
-		echo "Instalando bash..."
-		paquete="bash"
-		opkg update
-		opkg install $paquete
+		instalar_package "bash"
 	fi
 	if [ ! -f /usr/bin/curl ];
 	then
-		echo "Instalando curl..."
-		paquete="curl"
-		opkg update
-		opkg install $paquete
+		instalar_package "curl"
 	fi
 }
 parar_proceso() {
@@ -341,7 +335,7 @@ redimensionamiento_picons() {
 		URL=$URL_TROPICAL/utilidades/resizepicon.py
 		CARPETA=/usr/bin/
 		FICHERO=resizepicon.py
-		wget $URL -O $CARPETA/$FICHERO --no-check-certificate
+		curl $URL -o $CARPETA/$FICHERO
 		if [ $? -eq 0 ];
 		then
 			python $CARPETA/$FICHERO $RUTA_PICONS
@@ -356,7 +350,7 @@ redimensionamiento_picons() {
 
 wget_zip() {
 	download=${1}
-	wget -c ${download} -O $DIR_TMP/$ZIP --no-check-certificate
+	curl ${download} -o $DIR_TMP/$ZIP
 	if [ $? -ne 0 ];
 	then
 		echo "Errores al descargar $download"
@@ -365,7 +359,7 @@ wget_zip() {
 }
 
 wget_file() {
-	wget $URL -O $DIR_TMP/$CARPETA/$FICHERO --no-check-certificate
+	curl $URL -o $DIR_TMP/$CARPETA/$FICHERO
 	if [ $? -eq 0 ];
 	then
 		chmod +x $DIR_TMP/$CARPETA/$FICHERO

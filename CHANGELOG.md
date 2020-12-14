@@ -1,5 +1,10 @@
 # Changelog
 
+## [4.8] - 14/12/2020
+
+- Adaptaciones para que las descargas de paquetes funcionen en OpenPLI 8.0
+- Mejoras en la instalación del paquete rsync 
+
 ## [4.7] - 29/10/2020
 
 - Añadidas opciones de chequeo y upgrade desde nuestro servidor feed
