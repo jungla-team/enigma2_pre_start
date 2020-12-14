@@ -1,5 +1,9 @@
 # Changelog
 
+## [4.9] - 14/12/2020
+
+- Corrección para que genere el fichero de log
+
 ## [4.8] - 14/12/2020
 
 - Adaptaciones para que las descargas de paquetes funcionen en OpenPLI 8.0

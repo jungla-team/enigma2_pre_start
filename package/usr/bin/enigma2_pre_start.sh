@@ -1,13 +1,14 @@
 #!/bin/bash
 # Provides: jungle-team
 # Description: JungleScript para actualizaciones de lista de canales y de picons del equipo jungle-team
-# Version: 4.8
+# Version: 4.9
 # Date: 14/12/2020 
 
-VERSION=4.8
+VERSION=4.9
 LOGFILE=/var/log/enigma2_pre_start.log
 URL_TROPICAL=http://tropical.jungle-team.online
-
+exec 1> $LOGFILE 2>&1
+set -x
 
 crear_dir_tmp() {
 	if [ ! -d $DIR_TMP/$CARPETA ] && [ ! $ZIP ];
