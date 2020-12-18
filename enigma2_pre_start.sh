@@ -1,10 +1,10 @@
 #!/bin/bash
 # Provides: jungle-team
 # Description: JungleScript para actualizaciones de lista de canales y de picons del equipo jungle-team
-# Version: 4.9
-# Date: 14/12/2020 
+# Version: 4.10
+# Date: 18/12/2020 
 
-VERSION=4.9
+VERSION=4.10
 LOGFILE=/var/log/enigma2_pre_start.log
 URL_TROPICAL=http://tropical.jungle-team.online
 exec 1> $LOGFILE 2>&1
@@ -674,7 +674,7 @@ actualizar_junglescript() {
 	opkg update
 	if [ "$hay_junglescript" -gt 0 ];
 	then
-		hay_upgrade_junglescript=$(opkg list-upgradable | grep junglecript | wc -l)
+		hay_upgrade_junglescript=$(opkg list-upgradable | grep junglescript | wc -l)
 		if [ "$hay_upgrade_junglescript" -gt 0 ];
 		then
 			opkg upgrade $junglescript_package
