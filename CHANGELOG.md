@@ -1,5 +1,9 @@
 # Changelog
 
+## [4.10] - 18/12/2020
+
+- Corrección de errores
+
 ## [4.9] - 14/12/2020
 
 - Corrección para que genere el fichero de log
