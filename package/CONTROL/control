@@ -1,6 +1,6 @@
 Package: enigma2-plugin-extensions-junglescript
-Version: 4.10
+Version: 5.2
 Architecture: all
-Depends: bash
+Depends: bash,curl
 Maintainer: jungle-team
 Description: JungleScript for enigma2

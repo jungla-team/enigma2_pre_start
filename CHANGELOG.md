@@ -1,5 +1,20 @@
 # Changelog
 
+## [5.2] - 28/01/2021
+
+- Añadida opción para cargar picons en color (TIPOPICON=movistar-color)
+- Limpieza de archivos de PLUTOTV o TDTCHANNELS si están activados y después se desactivan
+
+## [5.1] - 22/01/2021
+
+- Incluído bouquet enigma2 para PlutoTV - https://pluto.tv
+
+## [5.0] - 26/12/2020
+
+- Incluido bouquet enigma2 para Tdtchannels.tv - https://github.com/LaQuay/TDTChannels
+- Opción de no borrar los favoritos que deseamos usando el fichero /etc/enigma2/save_bouquets
+- Añadidas dependencias de bash y curl en la instalación
+
 ## [4.10] - 18/12/2020
 
 - Corrección de errores
