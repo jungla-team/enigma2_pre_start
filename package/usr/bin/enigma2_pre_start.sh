@@ -1,10 +1,10 @@
 #!/bin/bash
 # Provides: jungle-team
 # Description: JungleScript para actualizaciones de lista de canales y de picons del equipo jungle-team
-# Version: 5.2
-# Date: 28/01/2021 
+# Version: 5.4
+# Date: 02/02/2021 
 
-VERSION=5.2
+VERSION=5.4
 LOGFILE=/var/log/enigma2_pre_start.log
 URL_TROPICAL=http://tropical.jungle-team.online
 exec 1> $LOGFILE 2>&1
@@ -53,19 +53,6 @@ diferencias_fichero() {
 			echo "Hay cambios en el fichero ${FICHERO}"
 		fi 
 	fi	  
-}
-
-instalar_ipk(){
-	curl $URL_IPK -o $DIR_TMP/$FILE_IPK
-
-	if [ -f  $DIR_TMP/$FILE_IPK ]; 
-	then
-		echo "Instalando ipk $DIR_TMP/$FILE_IPK"
-		opkg update
-		opkg install $DIR_TMP/$FILE_IPK
-	else
-		echo "No se ha podido descargar el fichero ipk: $DIR_TMP/$FILE_IPK"
-	fi
 }
 
 parar_proceso() {
@@ -127,20 +114,24 @@ borrado_canales() {
 	DESTINO=/etc/enigma2
 	HAY_FAV_TDT=$(grep -il ee0000 ${DESTINO}/*.tv | wc -l)
 	HAY_FAV_IPTV=$(grep -il http ${DESTINO}/*.tv | wc -l)
-	HAY_FAV=$(cat ${DESTINO}/fav_bouquets | wc -l)
 	EXCLUDE_FAV=exclude_fav.txt
-	if [ "$HAY_FAV_TDT" -gt 0 ] || [ "$HAY_FAV_IPTV" -gt 0 ] || [ "$HAY_FAV" -gt 0 ];
+	if [ -f ${DESTINO}/save_bouquets ];
+	then
+		HAY_PARA_SALVAR=$(cat ${DESTINO}/save_bouquets | wc -l)
+	else
+		HAY_PARA_SALVAR=0
+	fi
+	if [ "$HAY_FAV_TDT" -gt 0 ] || [ "$HAY_FAV_IPTV" -gt 0 ] || [ "$HAY_PARA_SALVAR" -gt 0 ];
 	then
 		for i in $(ls ${DESTINO}/*.tv);
 		do
 			BOUQUET_FILE=$i
 			EXCLUIR_FAV_TDT=$(grep -il ee0000 ${BOUQUET_FILE} | wc -l)
 			EXCLUIR_FAV_IPTV=$(grep -il http ${BOUQUET_FILE} | wc -l)
-			BOUQUET_NAME_NOPUNTOS=$(echo ${BOUQUET_FILE} | cut -d'/' -f4 | cut -d "." -f2)
-			EXCLUIR_FAV=$(grep -i ${BOUQUET_NAME_NOPUNTOS} ${DESTINO}/fav_bouquets | wc -l)
-			if [ "$EXCLUIR_FAV_TDT" -eq 0 ] && [ "$EXCLUIR_FAV_IPTV" -eq 0 ] && [ "$EXCLUIR_FAV" -eq 0 ];
+			salvar_bouquet $BOUQUET_FILE
+			if [ "$EXCLUIR_FAV_TDT" -eq 0 ] && [ "$EXCLUIR_FAV_IPTV" -eq 0 ] && [ "$SALVAR_BOUQUET" -eq 0 ];
 			then
-				echo "Borro bouquet: $BOUQUET_FILE $EXCLUIR_FAV_TDT $EXCLUIR_FAV_IPTV $EXCLUIR_FAV"
+				echo "Borro bouquet: $BOUQUET_FILE"
 				rm -f $BOUQUET_FILE
 			else
 				BOUQUET_NAME=$(echo ${BOUQUET_FILE} | cut -d'/' -f4)
@@ -148,10 +139,27 @@ borrado_canales() {
 				echo $BOUQUET_NAME >> $DIR_TMP/$EXCLUDE_FAV
 				echo -e $BOUQUET_NAME >> $DIR_TMP/excludes.txt
 			fi
+			rm -f $CARPETA/$FICHERO
 		done
 		ls $DESTINO/*.radio $DESTINO/lamedb $DESTINO/blacklist $DESTINO/whitelist $DESTINO/satellites.xml | xargs rm
 	else
 		ls $DESTINO/*.tv $DESTINO/*.radio $DESTINO/lamedb $DESTINO/blacklist $DESTINO/whitelist $DESTINO/satellites.xml | xargs rm
+	fi
+}
+
+salvar_bouquet(){
+	BOUQUET=$1
+	DESTINO=/etc/enigma2
+	SALVAR_BOUQUET=0
+	if [ -f ${DESTINO}/save_bouquets ];
+	then
+		HAY_PARA_SALVAR=$(cat ${DESTINO}/save_bouquets | wc -l)
+		if [ "$HAY_PARA_SALVAR" -gt 0 ];
+		then
+			NUM_PUNTOS=$(echo ${BOUQUET} | grep -o "\." | wc -l)
+			BOUQUET_NAME_SINPUNTOS=$(basename ${BOUQUET} | cut -d '.' -f${NUM_PUNTOS})
+			SALVAR_BOUQUET=$(grep ${BOUQUET_NAME_SINPUNTOS} ${DESTINO}/save_bouquets | wc -l)
+		fi
 	fi
 }
 
@@ -162,13 +170,13 @@ recargar_lista_canales() {
 diferencias_canales() {
 	DESTINO=/etc/enigma2
 	LOG_RSYNC_CANALES=rsync_canales.log
-	EXCLUDE_FILES=$(echo -e "README.md\nLICENSE\nsatellites.xml" > $DIR_TMP/excludes.txt)
+	echo -e "README.md\nLICENSE\nsatellites.xml" > $DIR_TMP/excludes.txt
 	borrado_canales
 	if [ -f $DESTINO/fav_bouquets ];
 	then
 		for i in $(cat $DESTINO/fav_bouquets);
 		do
-			ls $DIR_TMP/$CARPETA/*.tv | grep $i | cut -d'/' -f4 >> $DIR_TMP/excludes.txt
+			ls $DIR_TMP/$CARPETA/*.tv | grep $i | cut -d'/' -f7 >> $DIR_TMP/excludes.txt
 			sed -i "/$i/d" $DIR_TMP/$CARPETA/bouquets.tv
 		done
 	fi
@@ -176,6 +184,7 @@ diferencias_canales() {
 	rsync -aiv $DIR_TMP/$CARPETA/* $DESTINO --exclude-from=$DIR_TMP/excludes.txt --log-file=$DIR_TMP/$LOG_RSYNC_CANALES
 	FICH_SAT=satellites.xml
 	RUTA_SAT=/etc/tuxbox
+	LINEA=3
 	rsync -aiv $DIR_TMP/$CARPETA/$FICH_SAT $RUTA_SAT/$FICH_SAT --log-file=$DIR_TMP/$LOG_RSYNC_CANALES
 	if [ -f $DIR_TMP/$EXCLUDE_FAV ];
 	then
@@ -184,9 +193,13 @@ diferencias_canales() {
 			EXISTE_FAV=$(grep -i "${i}" $DESTINO/bouquets.tv | wc -l)
 			if [ "$EXISTE_FAV" -eq 0 ];
 			then
-				echo '#SERVICE 1:7:1:0:0:0:0:0:0:0:FROM BOUQUET "'${i}'" ORDER BY bouquet' >> $DESTINO/bouquets.tv
+				if [ "${i}" != "bouquets.tv" ];
+				then
+					sed -i ${LINEA}'a\#SERVICE 1:7:1:0:0:0:0:0:0:0:FROM BOUQUET "'${i}'" ORDER BY bouquet' $DESTINO/bouquets.tv
+					let LINEA=LINEA+1
+				fi
 			else
-				echo "Existe favorito ${i} ya previamente en bouquets.tv"
+					echo "Existe favorito ${i} ya previamente en bouquets.tv"
 			fi
 		done
 	fi
@@ -201,6 +214,7 @@ diferencias_canales() {
 	else
 		echo "CAMBIOS_RSYNC esta vacía"
 	fi
+	sed -i "/bouquets.tv/d" $DESTINO/bouquets.tv
 	echo "Aplicando dos2unix al fichero de bouquets.tv por si acaso"
 	/usr/bin/dos2unix $DESTINO/bouquets.tv
 }
@@ -485,12 +499,12 @@ cargar_variables_conf(){
 			then
 				tdtchannels_conf=0
 			fi
-			plutotv_conf=$(grep -i nPLUTOTV ${FICH_CONFIG} | cut -d'=' -f2)
+			plutotv_conf=$(grep -i PLUTOTV ${FICH_CONFIG} | cut -d'=' -f2)
 			if [ ! "$plutotv_conf" ];
 			then
 				plutotv_conf=0
 			fi
-			echo "Recreando fichero de config porque no tenía cuatro líneas"
+			echo "Recreando fichero de config porque no tenía cinco líneas"
 			echo -e "LISTACANALES=${lista_canales_conf}\nPICONS=${picons_conf}\nTIPOPICON=${tipo_picon_conf}\nTDTCHANNELS=${tdtchannels_conf}\nPLUTOTV=${plutotv_conf}" > $FICH_CONFIG
 		fi
 		echo "Aplicando dos2unix al fichero de config por si acaso"
@@ -581,7 +595,7 @@ actualizar_picons(){
 			URL=$URL_TROPICAL/oasis/picones/jungle_movistar/jungle-picon-movistar-color.zip
 		    URL_ACTUALIZACION=$URL_TROPICAL/oasis/picones/jungle_movistar/color/picon/actualizacion
 			CARPETA="Picon-enigma2-Movistar-main/jungle-picon-Movistar-color/picon"
-			;;		
+			;;
 		'*')
 			TIPO_PICON=movistar-original
 			URL=$URL_TROPICAL/oasis/picones/jungle_movistar/jungle-picon-Movistar-Transparente.zip
@@ -698,8 +712,8 @@ actualizar_tdtchannels() {
 		EXISTE_TDTCHANNELS=$(grep -i "${FICHERO_TDTCHANNELS}" ${DEST_TDTCHANNELS}/bouquets.tv | wc -l)
 		if [ "$EXISTE_TDTCHANNELS" -eq 0 ];
 		then
-			echo '#SERVICE 1:7:1:0:0:0:0:0:0:0:FROM BOUQUET "'${FICHERO_TDTCHANNELS}'" ORDER BY bouquet' >> $DEST_TDTCHANNELS/bouquets.tv
-			echo ""
+			sed -i ${LINEA}'a\#SERVICE 1:7:1:0:0:0:0:0:0:0:FROM BOUQUET "'${FICHERO_TDTCHANNELS}'" ORDER BY bouquet' $DESTINO/bouquets.tv
+			let LINEA=LINEA+1
 		else
 			echo "Existe favorito ${FICHERO_TDTCHANNELS} ya previamente en bouquets.tv"
 		fi
@@ -722,8 +736,8 @@ actualizar_plutotv() {
 		EXISTE_PLUTOTV=$(grep -i "${FICHERO_PLUTOTV}" ${DEST_PLUTOTV}/bouquets.tv | wc -l)
 		if [ "$EXISTE_PLUTOTV" -eq 0 ];
 		then
-			echo '#SERVICE 1:7:1:0:0:0:0:0:0:0:FROM BOUQUET "'${FICHERO_PLUTOTV}'" ORDER BY bouquet' >> $DEST_PLUTOTV/bouquets.tv
-			echo ""
+			sed -i ${LINEA}'a\#SERVICE 1:7:1:0:0:0:0:0:0:0:FROM BOUQUET "'${FICHERO_PLUTOTV}'" ORDER BY bouquet' $DESTINO/bouquets.tv
+			let LINEA=LINEA+1
 		else
 			echo "Existe favorito ${FICHERO_PLUTOTV} ya previamente en bouquets.tv"
 		fi

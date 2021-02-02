@@ -1,4 +1,4 @@
-# enigma2_pre_start
+# enigma2_pre_start <a href="https://www.paypal.me/jungleteam" rel="nofollow"><img src="https://camo.githubusercontent.com/d5d24e33e2f4b6fe53987419a21b203c03789a8f/68747470733a2f2f696d672e736869656c64732e696f2f62616467652f446f6e6174652d50617950616c2d677265656e2e737667" alt="Donate" data-canonical-src="https://img.shields.io/badge/Donate-PayPal-green.svg" style="max-width:100%;"></a></h1>
 
 Se usa este script para actualizaciones de canales y de picons del proyecto de https://jungle-team.com/
 
@@ -52,6 +52,9 @@ Ejemplo:
 ```
 deportes
 laliga
+mibouquet
+motos
+...
 ```
 
 Más documentación sobre el script en: https://jungle-team.com/junglescript-5-0-auto-instalador-lista-canales-y-picon-enigma2/
