@@ -1,10 +1,10 @@
 #!/bin/bash
 # Provides: jungle-team
 # Description: JungleScript para actualizaciones de lista de canales y de picons del equipo jungle-team
-# Version: 5.4
-# Date: 02/02/2021 
+# Version: 5.6
+# Date: 01/03/2021 
 
-VERSION=5.4
+VERSION=5.6
 LOGFILE=/var/log/enigma2_pre_start.log
 URL_TROPICAL=http://tropical.jungle-team.online
 exec 1> $LOGFILE 2>&1
@@ -533,6 +533,18 @@ actualizar_listacanales(){
 		CARPETA=Canales-enigma2-main/Jungle-Astra-19.2-comunitarias/etc/enigma2
 		ZIP=Jungle-Astra-19.2-comunitarias.zip
 		;;
+	'astra-hotbird-hispasat')
+		URL=$URL_TROPICAL/oasis/lista_canales/Jungle-Astra19.2-Hotbird13-Hispasat30.zip
+		URL_ACTUALIZACION=$URL_TROPICAL/oasis/lista_canales/astra-hotbird-hispasat/etc/enigma2/actualizacion
+		CARPETA=Canales-enigma2-main/Jungle-Astra19.2-Hotbird13-Hispasat30/etc/enigma2
+		ZIP=Jungle-Astra19.2-Hotbird13-Hispasat30.zip
+		;;
+	'astra-hispasat')
+		URL=$URL_TROPICAL/oasis/lista_canales/Jungle-Astra19.2-Hispasat30.zip
+		URL_ACTUALIZACION=$URL_TROPICAL/oasis/lista_canales/astra-hispasat/etc/enigma2/actualizacion
+		CARPETA=Canales-enigma2-main/Jungle-Astra19.2-Hispasat30/etc/enigma2
+		ZIP=Jungle-Astra19.2-Hispasat30.zip
+		;;
 	'*')
 		URL=$URL_TROPICAL/oasis/lista_canales/Jungle-Astra-19.2.zip
 		URL_ACTUALIZACION=$URL_TROPICAL/oasis/lista_canales/astra/etc/enigma2/actualizacion
@@ -595,6 +607,12 @@ actualizar_picons(){
 			URL=$URL_TROPICAL/oasis/picones/jungle_movistar/jungle-picon-movistar-color.zip
 		    URL_ACTUALIZACION=$URL_TROPICAL/oasis/picones/jungle_movistar/color/picon/actualizacion
 			CARPETA="Picon-enigma2-Movistar-main/jungle-picon-Movistar-color/picon"
+			;;
+		'movistar-color-3d')
+			TIPO_PICON=movistar-color
+			URL=$URL_TROPICAL/oasis/picones/jungle_movistar/jungle-picon-movistar-color-3d.zip
+		    URL_ACTUALIZACION=$URL_TROPICAL/oasis/picones/jungle_movistar/color-3d/picon/actualizacion
+			CARPETA="Picon-enigma2-Movistar-main/jungle-picon-Movistar-color-3d/picon"
 			;;
 		'*')
 			TIPO_PICON=movistar-original

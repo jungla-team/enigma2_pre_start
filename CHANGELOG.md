@@ -1,5 +1,13 @@
 # Changelog
 
+## [5.6] - 01/03/2021
+
+- Añadidos soporte para picons TIPOPICON=movistar-color-3d - https://github.com/jungla-team/Picon-enigma2-Movistar/tree/main/jungle-picon-Movistar-color-3d/picon
+
+## [5.5] - 14/02/2021
+
+- Añadidas listas de hispasat para que se actualicen a través del script con el parámetro LISTA_CANALES (astra-hispasat, astra-hotbird-hispasat)
+
 ## [5.4] - 02/02/2021
 
 - Bouquets incluídos de save_bouquets, bouquets IPTV y TDT ahora aparecerán al principio de la lista
