@@ -2,7 +2,8 @@
 
 ## [5.6] - 01/03/2021
 
-- Añadidos soporte para picons TIPOPICON=movistar-color-3d - https://github.com/jungla-team/Picon-enigma2-Movistar/tree/main/jungle-picon-Movistar-color-3d/picon
+- Añadidos soporte para picons TIPOPICON=movistar-color-3d
+- https://github.com/jungla-team/Picon-enigma2-Movistar/tree/main/jungle-picon-Movistar-color-3d/picon
 
 ## [5.5] - 14/02/2021
 
