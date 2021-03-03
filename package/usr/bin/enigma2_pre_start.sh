@@ -1,10 +1,10 @@
 #!/bin/bash
 # Provides: jungle-team
 # Description: JungleScript para actualizaciones de lista de canales y de picons del equipo jungle-team
-# Version: 5.6
-# Date: 01/03/2021 
+# Version: 5.7
+# Date: 03/03/2021 
 
-VERSION=5.6
+VERSION=5.7
 LOGFILE=/var/log/enigma2_pre_start.log
 URL_TROPICAL=http://tropical.jungle-team.online
 exec 1> $LOGFILE 2>&1
@@ -380,14 +380,19 @@ borrar_directorio() {
 }
 
 diff_actualizacion(){
-	actualizacion=$(cat ${FICHERO_ACTUALIZACION} 2>/dev/null)
-	instalada=$(curl -k -s ${URL_ACTUALIZACION} 2>/dev/null)
-
-	if [ "$actualizacion" != "$instalada" ]; 
+	instalada=$(cat ${FICHERO_ACTUALIZACION} 2>/dev/null)
+	actualizacion=$(curl -k -s ${URL_ACTUALIZACION} 2>/dev/null)
+	if [ ! -z "$actualizacion" ];
 	then
-		ACTUALIZACION="YES"
+		if [ "$actualizacion" != "$instalada" ]; 
+		then
+			ACTUALIZACION="YES"
+		else
+			ACTUALIZACION="NO"
+		fi
 	else
-		ACTUALIZACION="NO"
+		echo "No puedo descargar el fichero de actualizacion del servidor. Saliendo..."
+		exit 1
 	fi
 }
 
@@ -609,7 +614,7 @@ actualizar_picons(){
 			CARPETA="Picon-enigma2-Movistar-main/jungle-picon-Movistar-color/picon"
 			;;
 		'movistar-color-3d')
-			TIPO_PICON=movistar-color
+			TIPO_PICON=movistar-color-3d
 			URL=$URL_TROPICAL/oasis/picones/jungle_movistar/jungle-picon-movistar-color-3d.zip
 		    URL_ACTUALIZACION=$URL_TROPICAL/oasis/picones/jungle_movistar/color-3d/picon/actualizacion
 			CARPETA="Picon-enigma2-Movistar-main/jungle-picon-Movistar-color-3d/picon"

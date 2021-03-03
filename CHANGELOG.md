@@ -1,5 +1,10 @@
 # Changelog
 
+## [5.7] - 03/03/2021
+
+- Corregido bug a la hora de escribir en el log la traza de los picons 3d
+- Corregido bug que en algunos casos con cortes de luz se borraban los canales al arrancar
+
 ## [5.6] - 01/03/2021
 
 - Añadidos soporte para picons TIPOPICON=movistar-color-3d
