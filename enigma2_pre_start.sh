@@ -1,10 +1,10 @@
 #!/bin/bash
 # Provides: jungle-team
 # Description: JungleScript para actualizaciones de lista de canales y de picons del equipo jungle-team
-# Version: 5.7
-# Date: 03/03/2021 
+# Version: 5.8
+# Date: 23/03/2021 
 
-VERSION=5.7
+VERSION=5.8
 LOGFILE=/var/log/enigma2_pre_start.log
 URL_TROPICAL=http://tropical.jungle-team.online
 exec 1> $LOGFILE 2>&1
@@ -379,16 +379,27 @@ borrar_directorio() {
 	fi
 }
 
+is_valid_date(){
+	[[ "$1" =~ ^[0-9]{2}-[0-9]{2}-[0-9]{4}$ ]] ; fecha_valida=$?; 
+}
+
 diff_actualizacion(){
 	instalada=$(cat ${FICHERO_ACTUALIZACION} 2>/dev/null)
 	actualizacion=$(curl -k -s ${URL_ACTUALIZACION} 2>/dev/null)
 	if [ ! -z "$actualizacion" ];
 	then
-		if [ "$actualizacion" != "$instalada" ]; 
+		is_valid_date "$actualizacion"
+		if [ "$fecha_valida" -eq 0 ];
 		then
-			ACTUALIZACION="YES"
+			if [ "$actualizacion" != "$instalada" ]; 
+			then
+				ACTUALIZACION="YES"
+			else
+				ACTUALIZACION="NO"
+			fi
 		else
-			ACTUALIZACION="NO"
+			echo "Problemas con internet, ya que el fichero de actualizacion descargado no es una fecha. Saliendo..."
+			exit 1
 		fi
 	else
 		echo "No puedo descargar el fichero de actualizacion del servidor. Saliendo..."

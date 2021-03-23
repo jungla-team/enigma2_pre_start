@@ -1,5 +1,9 @@
 # Changelog
 
+## [5.8] - 23/03/2021
+
+- Corregido bug cuando arrancaba el deco sin conexión a Internet, para que no vacíe la lista de canales
+
 ## [5.7] - 03/03/2021
 
 - Corregido bug a la hora de escribir en el log la traza de los picons 3d
