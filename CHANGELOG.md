@@ -2,7 +2,7 @@
 
 ## [5.8] - 23/03/2021
 
-- Corregido bug cuando arrancaba el deco sin conexión a Internet, para que no vacíe la lista de canales
+- Corregido bug que en algunos casos borraba la lista de canales cuando arrancaba el deco sin conexión a Internet
 
 ## [5.7] - 03/03/2021
 
