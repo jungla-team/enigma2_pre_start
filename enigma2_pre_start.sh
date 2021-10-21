@@ -1,10 +1,10 @@
 #!/bin/bash
 # Provides: jungle-team
 # Description: JungleScript para actualizaciones de lista de canales y de picons del equipo jungle-team
-# Version: 5.8
-# Date: 23/03/2021 
+# Version: 5.9
+# Date: 21/10/2021 
 
-VERSION=5.8
+VERSION=5.9
 LOGFILE=/var/log/enigma2_pre_start.log
 URL_TROPICAL=http://tropical.jungle-team.online
 exec 1> $LOGFILE 2>&1
@@ -488,12 +488,12 @@ cargar_variables_conf(){
 	FICH_CONFIG_TMP=$DIR_TMP/enigma2_pre_start.conf.tmp
 	if [ ! -f $FICH_CONFIG ];
 	then
-		echo -e "LISTACANALES=astra\nPICONS=0\nTIPOPICON=movistar-original\nTDTCHANNELS=0\nPLUTOTV=0" > $FICH_CONFIG
+		echo -e "LISTACANALES=astra\nPICONS=0\nTIPOPICON=movistar-original" > $FICH_CONFIG
 	else
 		grep -v -e '^[[:space:]]*$' $FICH_CONFIG > $FICH_CONFIG_TMP
 		cp $FICH_CONFIG_TMP $FICH_CONFIG
 		num_lineas_fich_config=$(cat ${FICH_CONFIG} | wc -l)
-		if [ "$num_lineas_fich_config" -lt 5 ];
+		if [ "$num_lineas_fich_config" -lt 3 ];
 		then
 		    lista_canales_conf=$(grep -i LISTACANALES ${FICH_CONFIG} | cut -d'=' -f2)
 			if [ ! "$lista_canales_conf" ];
@@ -510,18 +510,8 @@ cargar_variables_conf(){
 			then
 				tipo_picon_conf=movistar-original
 			fi
-			tdtchannels_conf=$(grep -i TDTCHANNELS ${FICH_CONFIG} | cut -d'=' -f2)
-			if [ ! "$tdtchannels_conf" ];
-			then
-				tdtchannels_conf=0
-			fi
-			plutotv_conf=$(grep -i PLUTOTV ${FICH_CONFIG} | cut -d'=' -f2)
-			if [ ! "$plutotv_conf" ];
-			then
-				plutotv_conf=0
-			fi
-			echo "Recreando fichero de config porque no tenía cinco líneas"
-			echo -e "LISTACANALES=${lista_canales_conf}\nPICONS=${picons_conf}\nTIPOPICON=${tipo_picon_conf}\nTDTCHANNELS=${tdtchannels_conf}\nPLUTOTV=${plutotv_conf}" > $FICH_CONFIG
+			echo "Recreando fichero de config porque no tenía tres líneas"
+			echo -e "LISTACANALES=${lista_canales_conf}\nPICONS=${picons_conf}\nTIPOPICON=${tipo_picon_conf}" > $FICH_CONFIG
 		fi
 		echo "Aplicando dos2unix al fichero de config por si acaso"
 		/usr/bin/dos2unix $FICH_CONFIG
@@ -584,8 +574,6 @@ actualizar_listacanales(){
 			renombrar_carpeta
 			merge_lamedb
 			diferencias_canales
-			actualizar_tdtchannels
-			actualizar_plutotv
 		else
 			echo "No hay cambios en canales"
 		fi
@@ -597,8 +585,6 @@ actualizar_listacanales(){
 		renombrar_carpeta
 		merge_lamedb
 		diferencias_canales
-		actualizar_tdtchannels
-		actualizar_plutotv
 	fi
 }
 
@@ -732,54 +718,6 @@ actualizar_junglescript() {
 					MENSAJE="Problema en la actualizacion automatica realizada sobre JungleScript"
 					enviar_telegram "${MENSAJE}"
 			fi
-		fi
-	fi
-}
-
-actualizar_tdtchannels() {
-	DEST_TDTCHANNELS=/etc/enigma2
-	FICHERO_TDTCHANNELS="userbouquet.tdtchannels.tv"
-	if [ "$TDTCHANNELS" -eq 1 ];
-	then
-		URL_TDTCHANNELS="https://www.tdtchannels.com/lists/userbouquet.tdtchannels.tv"
-		curl $URL_TDTCHANNELS -o $DEST_TDTCHANNELS/$FICHERO_TDTCHANNELS
-		EXISTE_TDTCHANNELS=$(grep -i "${FICHERO_TDTCHANNELS}" ${DEST_TDTCHANNELS}/bouquets.tv | wc -l)
-		if [ "$EXISTE_TDTCHANNELS" -eq 0 ];
-		then
-			sed -i ${LINEA}'a\#SERVICE 1:7:1:0:0:0:0:0:0:0:FROM BOUQUET "'${FICHERO_TDTCHANNELS}'" ORDER BY bouquet' $DESTINO/bouquets.tv
-			let LINEA=LINEA+1
-		else
-			echo "Existe favorito ${FICHERO_TDTCHANNELS} ya previamente en bouquets.tv"
-		fi
-	else
-		if [ -f "$DEST_TDTCHANNELS/$FICHERO_TDTCHANNELS" ];
-		then
-			rm -f $DEST_TDTCHANNELS/$FICHERO_TDTCHANNELS
-			sed -i '/tdtchannels/ d' $DEST_TDTCHANNELS/bouquets.tv
-		fi
-	fi
-}
-
-actualizar_plutotv() {
-	DEST_PLUTOTV=/etc/enigma2
-	FICHERO_PLUTOTV="userbouquet.plutotv.tv"
-	if [ "$PLUTOTV" -eq 1 ];
-	then
-		URL_PLUTOTV="$URL_TROPICAL/plutoTV/userbouquet.plutotv.tv"
-		curl $URL_PLUTOTV -o $DEST_PLUTOTV/$FICHERO_PLUTOTV
-		EXISTE_PLUTOTV=$(grep -i "${FICHERO_PLUTOTV}" ${DEST_PLUTOTV}/bouquets.tv | wc -l)
-		if [ "$EXISTE_PLUTOTV" -eq 0 ];
-		then
-			sed -i ${LINEA}'a\#SERVICE 1:7:1:0:0:0:0:0:0:0:FROM BOUQUET "'${FICHERO_PLUTOTV}'" ORDER BY bouquet' $DESTINO/bouquets.tv
-			let LINEA=LINEA+1
-		else
-			echo "Existe favorito ${FICHERO_PLUTOTV} ya previamente en bouquets.tv"
-		fi
-	else
-		if [ -f "$DEST_PLUTOTV/$FICHERO_PLUTOTV" ];
-		then
-			rm -f $DEST_PLUTOTV/$FICHERO_PLUTOTV
-			sed -i '/plutotv/ d' $DEST_PLUTOTV/bouquets.tv
 		fi
 	fi
 }

@@ -1,5 +1,10 @@
 # Changelog
 
+## [5.9] - 21/10/2021
+
+- Bug fixes
+- Se deja de dar soporte a TDTChannels y PlutoTV para usar los plugins asociados
+
 ## [5.8] - 23/03/2021
 
 - Corregido bug que en algunos casos borraba la lista de canales cuando arrancaba el deco sin conexión a Internet
