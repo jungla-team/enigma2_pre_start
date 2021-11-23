@@ -1,5 +1,8 @@
 # Changelog
 
+## [5.10] - 05/11/2021
+- Soporte para lista abertis (parametro ABERTIS=1)
+
 ## [5.9] - 21/10/2021
 
 - Bug fixes
