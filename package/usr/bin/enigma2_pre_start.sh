@@ -1,10 +1,10 @@
 #!/bin/bash
 # Provides: jungle-team
 # Description: JungleScript para actualizaciones de lista de canales y de picons del equipo jungle-team
-# Version: 5.10
-# Date: 05/11/2021 
+# Version: 5.11
+# Date: 17/12/2021 
 
-VERSION=5.10
+VERSION=5.11
 LOGFILE=/var/log/enigma2_pre_start.log
 URL_TROPICAL=http://tropical.jungle-team.online
 exec 1> $LOGFILE 2>&1
@@ -196,7 +196,7 @@ diferencias_canales() {
 				if [ "${i}" != "bouquets.tv" ];
 				then
 					sed -i ${LINEA}'a\#SERVICE 1:7:1:0:0:0:0:0:0:0:FROM BOUQUET "'${i}'" ORDER BY bouquet' $DESTINO/bouquets.tv
-					let LINEA=LINEA+1
+					let LINEA=$LINEA+1
 				fi
 			else
 					echo "Existe favorito ${i} ya previamente en bouquets.tv"
@@ -591,6 +591,8 @@ actualizar_listacanales(){
 		if [ "${ACTUALIZACION}" == "YES" ];
 		then
 			crear_dir_tmp
+			REINTENTOS=0
+			chequeo_internet
 			wget_zip $URL
 			descomprimir_zip
 			renombrar_carpeta
@@ -602,6 +604,8 @@ actualizar_listacanales(){
 	else
 		echo "No existe fichero de actualizacion de canales, asi que fuerzo la actualizacion de canales"
 		crear_dir_tmp
+		REINTENTOS=0
+		chequeo_internet
 		wget_zip $URL
 		descomprimir_zip
 		renombrar_carpeta
@@ -685,11 +689,15 @@ actualizar_abertis(){
 			diff_actualizacion
 			if [ "${ACTUALIZACION}" == "YES" ];
 			then
+				REINTENTOS=0
+				chequeo_internet
 				instalar_abertis
 			else
 				echo "No hay cambios en la lista abertis"
 			fi
 		else
+			REINTENTOS=0
+			chequeo_internet
 			instalar_abertis
 		fi
 	else
@@ -746,6 +754,8 @@ actualizar_picons(){
 					if [ "${ESPACIO_TMP}" = "OK" ] && [ "${ESPACIO_PICONS}" = "OK" ];
 					then
 						crear_dir_tmp
+						REINTENTOS=0
+						chequeo_internet
 						wget_zip $URL
 						descomprimir_zip
 						renombrar_carpeta
@@ -763,6 +773,8 @@ actualizar_picons(){
 				if [ "${ESPACIO_TMP}" = "OK" ] && [ "${ESPACIO_PICONS}" = "OK" ];
 				then
 					crear_dir_tmp
+					REINTENTOS=0
+					chequeo_internet
 					wget_zip $URL
 					descomprimir_zip
 					renombrar_carpeta
@@ -827,6 +839,29 @@ actualizar_junglescript() {
 					MENSAJE="Problema en la actualizacion automatica realizada sobre JungleScript"
 					enviar_telegram "${MENSAJE}"
 			fi
+		fi
+	fi
+}
+
+chequeo_internet() {
+	echo "Chequeando conectividad a Internet..."
+	URL_TEST="https://www.google.es/"
+	curl -sk ${URL_TEST} 2>/dev/null
+	salida=$?
+	if [ "$salida" -eq 0 ];
+	then
+		echo "Conexion a Internet OK"
+	else
+		if [ "$REINTENTOS" -eq 0 ];
+		then
+			echo "Conexion a Internet KO"
+			echo "Esperando 30 seg... para reintentar"
+			let REINTENTOS=$REINTENTOS+1
+			sleep 30
+			chequeo_internet
+		else
+			echo "Conexion a Internet KO, saliendo..."
+			exit 1
 		fi
 	fi
 }

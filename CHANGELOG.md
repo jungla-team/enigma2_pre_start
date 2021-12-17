@@ -1,5 +1,8 @@
 # Changelog
 
+## [5.11] - 17/12/2021
+- Se añade comprobación de conexión a internet y un reintento a los 30seg (bug detectado en algunos decos)
+
 ## [5.10] - 05/11/2021
 - Soporte para lista abertis (parametro ABERTIS=1)
 
