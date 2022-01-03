@@ -16,8 +16,7 @@ Parámetros a configurar:
 LISTACANALES=<listadecanales a elegir>
 PICONS=<0 a 1> 
 TIPOPICON=<tipodepicon a elegir>
-TDTCHANNELS=<0 o 1>
-PLUTOTV=<0 o 1>
+ABERTIS=<0 a 1> 
 ```
 
 LISTACANALES con uno de estos valores (astra, astra-hotbird, astra-comunitaria). 
