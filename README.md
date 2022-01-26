@@ -28,11 +28,10 @@ PLUTOTV con valor =1 para permitir que se descargue el bouquet plutotv, y valor 
 Ejemplo de archivo de configuración:
 
 ```
-LISTACANALES=astra-comunitaria
-PICONS=1
+LISTACANALES=astra
+PICONS=0
 TIPOPICON=movistar-original
-TDTCHANNELS=1
-PLUTOTV=1
+ABERTIS=0
 ```
 
 Además de estos parámetros podemos elegir si no queremos que nos meta algún bouquet en concreto de la lista de canales por defecto. Para ello hay que crear el fichero /etc/enigma2/fav_bouquets y dentro meter en líneas separadas los bouquets que NO queremos que se nos carguen en el deco.
