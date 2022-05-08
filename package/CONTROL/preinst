@@ -5,21 +5,13 @@ DIR_BIN=/usr/bin
 RSYNC_FILE=$DIR_BIN/rsync
 if [ ! -f $RSYNC_FILE ];
 then
-    opkg update
-    INSTALL_RSYNC=$(opkg list | grep "rsync -" | wc -l)
-    if [ "$INSTALL_RSYNC" -eq 0 ];
+    ES_ARM=$(uname -a | grep arm | wc -l)
+    if [ "$ES_ARM" -eq 1 ];
     then
-        ES_ARM=$(uname -a | grep arm | wc -l)
-        if [ "$ES_ARM" -eq 1 ];
-        then
-            BINARIO=binarios/arm/rsync
-        else
-            BINARIO=binarios/mipsel/rsync
-        fi
-        wget $URL/$BINARIO -P $DIR_BIN
-	chmod +x $RSYNC_FILE
+        BINARIO=binarios/arm/rsync
     else
-	opkg install rsync
-    fi   
+        BINARIO=binarios/mipsel/rsync
+    fi
+    wget $URL/$BINARIO -P $DIR_BIN
+    chmod +x $RSYNC_FILE
 fi
-
