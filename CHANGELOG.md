@@ -1,5 +1,8 @@
 # Changelog
 
+## [5.12] - 04/06/2022
+- Se quita el soporte para Abertis
+
 ## [5.11] - 17/12/2021
 - Se añade comprobación de conexión a internet y un reintento a los 30seg (bug detectado en algunos decos)
 
