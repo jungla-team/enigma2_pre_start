@@ -1,10 +1,10 @@
 #!/bin/bash
 # Provides: jungle-team
 # Description: JungleScript para actualizaciones de lista de canales y de picons del equipo jungle-team
-# Version: 5.11
-# Date: 17/12/2021 
+# Version: 5.12
+# Date: 04/06/2022 
 
-VERSION=5.11
+VERSION=5.12
 LOGFILE=/var/log/enigma2_pre_start.log
 URL_TROPICAL=http://tropical.jungle-team.online
 exec 1> $LOGFILE 2>&1
@@ -376,7 +376,6 @@ limpiar_dir_tmp() {
 		borrar_fichero "${DIR_TMP}/excludes.txt"
 		borrar_fichero "${DIR_TMP}/enigma2_pre_start.conf.tmp"
 		borrar_fichero "${DIR_TMP}/lamedb.txt"
-		borrar_fichero "${DIR_TMP}/userbouquet.abertis.tv"
 	fi
 }
 
@@ -505,7 +504,7 @@ cargar_variables_conf(){
 	FICH_CONFIG_TMP=$DIR_TMP/enigma2_pre_start.conf.tmp
 	if [ ! -f $FICH_CONFIG ];
 	then
-		echo -e "LISTACANALES=astra\nPICONS=0\nTIPOPICON=movistar-original\nABERTIS=0" > $FICH_CONFIG
+		echo -e "LISTACANALES=astra\nPICONS=0\nTIPOPICON=movistar-original" > $FICH_CONFIG
 	else
 		grep -v -e '^[[:space:]]*$' $FICH_CONFIG > $FICH_CONFIG_TMP
 		cp $FICH_CONFIG_TMP $FICH_CONFIG
@@ -527,13 +526,8 @@ cargar_variables_conf(){
 			then
 				tipo_picon_conf=movistar-original
 			fi
-			abertis_conf=$(grep -i ABERTIS ${FICH_CONFIG} | cut -d'=' -f2)
-			if [ ! "$abertis_conf" ];
-			then
-				abertis_conf=0
-			fi
 			echo "Recreando fichero de config porque no tenía cuatro líneas"
-			echo -e "LISTACANALES=${lista_canales_conf}\nPICONS=${picons_conf}\nTIPOPICON=${tipo_picon_conf}\nABERTIS=${abertis_conf}" > $FICH_CONFIG
+			echo -e "LISTACANALES=${lista_canales_conf}\nPICONS=${picons_conf}\nTIPOPICON=${tipo_picon_conf}" > $FICH_CONFIG
 		fi
 		echo "Aplicando dos2unix al fichero de config por si acaso"
 		/usr/bin/dos2unix $FICH_CONFIG
@@ -611,97 +605,6 @@ actualizar_listacanales(){
 		renombrar_carpeta
 		merge_lamedb
 		diferencias_canales
-	fi
-}
-
-instalar_abertis(){
-	hay_astra_sm=$(opkg list-installed | grep astra-sm | wc -l)
-	if [ ${hay_astra_sm} -eq 0 ]; 
-	then
-		opkg update
-		opkg install astra-sm
-	fi
-
-	es_arm=$(uname -a | grep arm | wc -l)
-	if [ ${es_arm} -eq 1 ];
-	then
-		ARQ=arm
-	else
-		ARQ=mips
-	fi
-
-	DEST_ASTRA=/etc/astra
-	DIR_TMP=/tmp
-	CARPETA=$DIR_TMP/abertis_patch
-	
-	if [ -d ${DEST_ASTRA} ];
-	then
-		ZIP=astra-$ARQ.zip
-		URL_ZIP=$URL_ABERTIS/$ZIP
-		wget_zip $URL_ZIP
-		descomprimir_zip
-		borrar_directorio "${DEST_ASTRA}"
-		mkdir -p $DEST_ASTRA
-		cp -rp $DIR_TMP/astra-$ARQ/astra/* $DEST_ASTRA
-		chmod +x $DEST_ASTRA/scripts/abertis
-	fi
-
-	LAMEDB=$DEST_ENIGMA/lamedb
-	lamedb_abertis=$(grep 'abertis' ${LAMEDB} | wc -l)
-	if [ "$lamedb_abertis" -eq 0 ];
-	then
-		FICHERO=lamedb.txt
-		URL_FILE=$URL_ABERTIS/$FICHERO
-		wget_file2 $URL_FILE
-		LINEA=$(grep -n 'end' $LAMEDB | tail -1 | cut -d':' -f1)
-		let LINEA=$LINEA-1
-		cd $DIR_TMP
-		/usr/bin/dos2unix $FICHERO
-		sed -i $LINEA'r lamedb.txt' $LAMEDB
-	fi
-
-	FICHERO=userbouquet.abertis.tv
-	FICHERO_ACTUALIZACION=$DEST_ENIGMA/$FICHERO_ACT
-	URL_ACTUALIZACION=$URL_ABERTIS/$FICHERO_ACT
-	URL_LISTATV=$URL_ABERTIS/$FICHERO
-	curl -k -s $URL_LISTATV -o $DEST_ENIGMA/$FICHERO 
-	curl -k -s $URL_ACTUALIZACION -o $FICHERO_ACTUALIZACION
-	EXISTE_ABERTIS=$(grep -i "${FICHERO}" ${DEST_ENIGMA}/bouquets.tv | wc -l)
-	if [ "$EXISTE_ABERTIS" -eq 0 ];
-	then
-		sed -i '$a \#SERVICE 1:7:1:0:0:0:0:0:0:0:FROM BOUQUET "'${FICHERO}'" ORDER BY bouquet' $DEST_ENIGMA/bouquets.tv
-	else
-		echo "Existe favorito ${FICHERO} ya previamente en bouquets.tv"
-	fi
-	/etc/init.d/astra-sm restart
-}
-
-actualizar_abertis(){
-	FICHERO_ACT=act_abertis
-	DEST_ENIGMA=/etc/enigma2
-	URL_ABERTIS=$URL_TROPICAL/abertis_patch
-	if [ "${ABERTIS}" -eq 1 ];
-	then
-		if [ -f $DEST_ENIGMA/act_abertis ];
-		then
-			FICHERO_ACTUALIZACION=$DEST_ENIGMA/$FICHERO_ACT
-			URL_ACTUALIZACION=$URL_ABERTIS/$FICHERO_ACT
-			diff_actualizacion
-			if [ "${ACTUALIZACION}" == "YES" ];
-			then
-				REINTENTOS=0
-				chequeo_internet
-				instalar_abertis
-			else
-				echo "No hay cambios en la lista abertis"
-			fi
-		else
-			REINTENTOS=0
-			chequeo_internet
-			instalar_abertis
-		fi
-	else
-		echo "Variable ABERTIS=0, asi que no hago nada"
 	fi
 }
 
@@ -888,10 +791,6 @@ cargar_variables_conf
 #### Para actualizar lista de canales #####
 
 actualizar_listacanales
-
-#### Para actualizar abertis #####
-
-actualizar_abertis
 
 #### Para actualizar picons #####
 
