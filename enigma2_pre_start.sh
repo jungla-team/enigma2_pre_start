@@ -1,10 +1,10 @@
 #!/bin/bash
 # Provides: jungle-team
 # Description: JungleScript para actualizaciones de lista de canales y de picons del equipo jungle-team
-# Version: 5.12
-# Date: 04/06/2022 
+# Version: 5.15
+# Date: 09/09/2022 
 
-VERSION=5.12
+VERSION=5.15
 LOGFILE=/var/log/enigma2_pre_start.log
 URL_TROPICAL=http://tropical.jungle-team.online
 exec 1> $LOGFILE 2>&1
@@ -112,7 +112,7 @@ enviar_mensaje_pantalla(){
 
 borrado_canales() {
 	DESTINO=/etc/enigma2
-	HAY_FAV_TDT=$(grep -il ee0000 ${DESTINO}/*.tv | wc -l)
+	HAY_FAV_TDT=$(grep -il eeee0 ${DESTINO}/*.tv | wc -l)
 	HAY_FAV_IPTV=$(grep -il http ${DESTINO}/*.tv | wc -l)
 	EXCLUDE_FAV=exclude_fav.txt
 	if [ -f ${DESTINO}/save_bouquets ];
@@ -126,7 +126,7 @@ borrado_canales() {
 		for i in $(ls ${DESTINO}/*.tv);
 		do
 			BOUQUET_FILE=$i
-			EXCLUIR_FAV_TDT=$(grep -il ee0000 ${BOUQUET_FILE} | wc -l)
+			EXCLUIR_FAV_TDT=$(grep -il eeee0 ${BOUQUET_FILE} | wc -l)
 			EXCLUIR_FAV_IPTV=$(grep -il http ${BOUQUET_FILE} | wc -l)
 			salvar_bouquet $BOUQUET_FILE
 			if [ "$EXCLUIR_FAV_TDT" -eq 0 ] && [ "$EXCLUIR_FAV_IPTV" -eq 0 ] && [ "$SALVAR_BOUQUET" -eq 0 ];
@@ -425,14 +425,14 @@ diff_actualizacion(){
 
 merge_lamedb() {
 	DESTINO=/etc/enigma2
-	if grep -q "eeee0000:" "$DESTINO/lamedb";
+	if grep -q "eeee0" "$DESTINO/lamedb";
 	then
 		echo "Tiene TDT"
 		((nlinea = 99999))
 		while IFS= read -r line; do
-			if [[ $line == *"eeee0000:"* ]]; then
+			if [[ $line == *"eeee0"* ]]; then
 				((nlinea = 1))
-				if [[ $line == "eeee0000:"* ]]; then
+				if [[ $line == "eeee0"* ]]; then
 					TIPO=TRANSPONDER
 				else
 					TIPO=SERVICE
@@ -526,7 +526,7 @@ cargar_variables_conf(){
 			then
 				tipo_picon_conf=movistar-original
 			fi
-			echo "Recreando fichero de config porque no tenía cuatro líneas"
+			echo "Recreando fichero de config porque no teníatres líneas"
 			echo -e "LISTACANALES=${lista_canales_conf}\nPICONS=${picons_conf}\nTIPOPICON=${tipo_picon_conf}" > $FICH_CONFIG
 		fi
 		echo "Aplicando dos2unix al fichero de config por si acaso"

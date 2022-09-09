@@ -1,5 +1,14 @@
 # Changelog
 
+## [5.15] - 09/09/2022
+- Soporte ampliado para que los canales TDT funcionen en cualquier dispositivo
+
+## [5.14] - 12/08/2022
+- Bug fixed con el repositorio
+
+## [5.13] - 12/08/2022
+- Actualizacion url repositorio
+
 ## [5.12] - 04/06/2022
 - Se quita el soporte para Abertis
 
