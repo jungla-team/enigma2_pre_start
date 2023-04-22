@@ -1,5 +1,8 @@
 # Changelog
 
+## [6.0] - 22/04/2023
+- Añadidos parámetros en el archivo de configuración (LISTA, FECHA_LISTACANALES, FECHA_PICONS, BOUQUETS_NO_DESCARGAR, BOUQUETS_NO_ACTUALIZAR)
+
 ## [5.15] - 09/09/2022
 - Soporte ampliado para que los canales TDT funcionen en cualquier dispositivo
 

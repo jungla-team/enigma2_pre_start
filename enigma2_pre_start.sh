@@ -1,10 +1,10 @@
 #!/bin/bash
 # Provides: jungle-team
 # Description: JungleScript para actualizaciones de lista de canales y de picons del equipo jungle-team
-# Version: 5.15
-# Date: 09/09/2022 
+# Version: 6.0
+# Date: 22/04/2023
 
-VERSION=5.15
+VERSION=6.0
 LOGFILE=/var/log/enigma2_pre_start.log
 URL_TROPICAL=http://tropical.jungle-team.online
 exec 1> $LOGFILE 2>&1
@@ -115,9 +115,9 @@ borrado_canales() {
 	HAY_FAV_TDT=$(grep -il eeee0 ${DESTINO}/*.tv | wc -l)
 	HAY_FAV_IPTV=$(grep -il http ${DESTINO}/*.tv | wc -l)
 	EXCLUDE_FAV=exclude_fav.txt
-	if [ -f ${DESTINO}/save_bouquets ];
+	if [ "${BOUQUETS_NO_ACTUALIZAR}" ];
 	then
-		HAY_PARA_SALVAR=$(cat ${DESTINO}/save_bouquets | wc -l)
+		HAY_PARA_SALVAR=$(echo ${BOUQUETS_NO_ACTUALIZAR} | tr ',' ' ' | wc -w)
 	else
 		HAY_PARA_SALVAR=0
 	fi
@@ -151,14 +151,14 @@ salvar_bouquet(){
 	BOUQUET=$1
 	DESTINO=/etc/enigma2
 	SALVAR_BOUQUET=0
-	if [ -f ${DESTINO}/save_bouquets ];
+	if [ "${BOUQUETS_NO_ACTUALIZAR}" ];
 	then
-		HAY_PARA_SALVAR=$(cat ${DESTINO}/save_bouquets | wc -l)
+		HAY_PARA_SALVAR=$(echo ${BOUQUETS_NO_ACTUALIZAR} | tr ',' ' ' | wc -w)
 		if [ "$HAY_PARA_SALVAR" -gt 0 ];
 		then
 			NUM_PUNTOS=$(echo ${BOUQUET} | grep -o "\." | wc -l)
 			BOUQUET_NAME_SINPUNTOS=$(basename ${BOUQUET} | cut -d '.' -f${NUM_PUNTOS})
-			SALVAR_BOUQUET=$(grep ${BOUQUET_NAME_SINPUNTOS} ${DESTINO}/save_bouquets | wc -l)
+			SALVAR_BOUQUET=$(echo ${BOUQUETS_NO_ACTUALIZAR} | grep -o ${BOUQUET_NAME_SINPUNTOS} | wc -l)
 		fi
 	fi
 }
@@ -172,9 +172,9 @@ diferencias_canales() {
 	LOG_RSYNC_CANALES=rsync_canales.log
 	echo -e "README.md\nLICENSE\nsatellites.xml" > $DIR_TMP/excludes.txt
 	borrado_canales
-	if [ -f $DESTINO/fav_bouquets ];
+	if [ "${BOUQUETS_NO_DESCARGAR}" ];
 	then
-		for i in $(cat $DESTINO/fav_bouquets);
+		for i in ${BOUQUETS_NO_DESCARGAR//,/ };
 		do
 			ls $DIR_TMP/$CARPETA/*.tv | grep $i | cut -d'/' -f7 >> $DIR_TMP/excludes.txt
 			sed -i "/$i/d" $DIR_TMP/$CARPETA/bouquets.tv
@@ -400,27 +400,49 @@ is_valid_date(){
 }
 
 diff_actualizacion(){
-	instalada=$(cat ${FICHERO_ACTUALIZACION} 2>/dev/null)
-	actualizacion=$(curl -k -s ${URL_ACTUALIZACION} 2>/dev/null)
-	if [ ! -z "$actualizacion" ];
+	instalada=$(echo $FECHA_ACTUALIZACION)
+	is_valid_date "$instalada"
+	if [ "$fecha_valida" -eq 0 ];
 	then
-		is_valid_date "$actualizacion"
-		if [ "$fecha_valida" -eq 0 ];
+		actualizacion=$(curl -k -s ${URL_ACTUALIZACION} 2>/dev/null)
+		if [ ! -z "$actualizacion" ];
 		then
-			if [ "$actualizacion" != "$instalada" ]; 
+			is_valid_date "$actualizacion"
+			if [ "$fecha_valida" -eq 0 ];
 			then
-				ACTUALIZACION="YES"
+				if [ "$actualizacion" != "$instalada" ]; 
+				then
+					ACTUALIZACION="YES"
+				else
+					ACTUALIZACION="NO"
+				fi
 			else
-				ACTUALIZACION="NO"
+				echo "Problemas con internet, ya que el fichero de actualizacion descargado no es una fecha. Saliendo..."
+				exit 1
 			fi
 		else
-			echo "Problemas con internet, ya que el fichero de actualizacion descargado no es una fecha. Saliendo..."
+			echo "No puedo descargar el fichero de actualizacion del servidor. Saliendo..."
 			exit 1
 		fi
 	else
-		echo "No puedo descargar el fichero de actualizacion del servidor. Saliendo..."
-		exit 1
+		echo "Formato de fecha no valido: ${instalada}. Revisar fichero de configuracion"
 	fi
+}
+
+actualizar_fecha_listacanales() {	
+	DIR_USR=/usr/bin
+	FICH_CONFIG=$DIR_USR/enigma2_pre_start.conf
+	actualizacion=$(curl -k -s ${URL_ACTUALIZACION} 2>/dev/null | tr -d '[[:space:]]')
+
+	sed -i "s/FECHA_LISTACANALES=.*/FECHA_LISTACANALES=${actualizacion}/" $FICH_CONFIG
+}
+
+actualizar_fecha_picons() {	
+	DIR_USR=/usr/bin
+	FICH_CONFIG=$DIR_USR/enigma2_pre_start.conf
+	actualizacion=$(curl -k -s ${URL_ACTUALIZACION} 2>/dev/null | tr -d '[[:space:]]')
+
+	sed -i "s/FECHA_PICONS=.*/FECHA_PICONS=${actualizacion}/" $FICH_CONFIG
 }
 
 merge_lamedb() {
@@ -504,17 +526,27 @@ cargar_variables_conf(){
 	FICH_CONFIG_TMP=$DIR_TMP/enigma2_pre_start.conf.tmp
 	if [ ! -f $FICH_CONFIG ];
 	then
-		echo -e "LISTACANALES=astra\nPICONS=0\nTIPOPICON=movistar-original" > $FICH_CONFIG
+		echo -e "LISTA=0\nLISTACANALES=astra\nFECHA_LISTACANALES=\nPICONS=0\nTIPOPICON=movistar-original\nFECHA_PICONS=\nBOUQUETS_NO_DESCARGAR=\nBOUQUETS_NO_ACTUALIZAR=" > $FICH_CONFIG
 	else
 		grep -v -e '^[[:space:]]*$' $FICH_CONFIG > $FICH_CONFIG_TMP
 		cp $FICH_CONFIG_TMP $FICH_CONFIG
 		num_lineas_fich_config=$(cat ${FICH_CONFIG} | wc -l)
-		if [ "$num_lineas_fich_config" -lt 4 ];
+		if [ "$num_lineas_fich_config" -lt 8 ];
 		then
-		    lista_canales_conf=$(grep -i LISTACANALES ${FICH_CONFIG} | cut -d'=' -f2)
+			lista_conf=$(grep -i LISTA= ${FICH_CONFIG} | grep -v LISTACANALES | cut -d'=' -f2)
+			if [ ! "$lista_conf" ];
+			then
+				lista_conf=0
+			fi
+		    lista_canales_conf=$(grep -i LISTACANALES ${FICH_CONFIG} | grep -v FECHA | cut -d'=' -f2)
 			if [ ! "$lista_canales_conf" ];
 			then
 				lista_canales_conf=astra
+			fi
+			fecha_lista_canales_conf=$(grep -i FECHA_LISTACANALES ${FICH_CONFIG} | cut -d'=' -f2)
+			if [ ! "$fecha_lista_canales_conf" ];
+			then
+				fecha_lista_canales_conf=""
 			fi
 			picons_conf=$(grep -i PICONS ${FICH_CONFIG} | cut -d'=' -f2)
 			if [ ! "$picons_conf" ];
@@ -526,8 +558,23 @@ cargar_variables_conf(){
 			then
 				tipo_picon_conf=movistar-original
 			fi
-			echo "Recreando fichero de config porque no teníatres líneas"
-			echo -e "LISTACANALES=${lista_canales_conf}\nPICONS=${picons_conf}\nTIPOPICON=${tipo_picon_conf}" > $FICH_CONFIG
+			fecha_picons_conf=$(grep -i FECHA_PICONS ${FICH_CONFIG} | cut -d'=' -f2)
+			if [ ! "$fecha_picons_conf" ];
+			then
+				fecha_picons_conf=""
+			fi
+			bouquets_no_descargar_conf=$(grep -i BOUQUETS_NO_DESCARGAR ${FICH_CONFIG} | cut -d'=' -f2)
+			if [ ! "$bouquets_no_descargar_conf" ];
+			then
+				bouquets_no_descargar_conf=""
+			fi
+			bouquets_no_actualizar_conf=$(grep -i BOUQUETS_NO_ACTUALIZAR ${FICH_CONFIG} | cut -d'=' -f2)
+			if [ ! "$bouquets_no_actualizar_conf" ];
+			then
+				bouquets_no_actualizar_conf=""
+			fi
+			echo "Recreando fichero de config porque no tenía ocho líneas"
+			echo -e "LISTA=${lista_conf}\nLISTACANALES=${lista_canales_conf}\nFECHA_LISTACANALES=${fecha_lista_canales_conf}\nPICONS=${picons_conf}\nTIPOPICON=${tipo_picon_conf}\nFECHA_PICONS=${fecha_picons_conf}\nBOUQUETS_NO_DESCARGAR=${bouquets_no_descargar_conf}\nBOUQUETS_NO_ACTUALIZAR=${bouquets_no_actualizar_conf}" > $FICH_CONFIG
 		fi
 		echo "Aplicando dos2unix al fichero de config por si acaso"
 		/usr/bin/dos2unix $FICH_CONFIG
@@ -536,54 +583,70 @@ cargar_variables_conf(){
 }
 
 actualizar_listacanales(){
-	case "$LISTACANALES" in
-	'astra')
-		URL=$URL_TROPICAL/oasis/lista_canales/Jungle-Astra-19.2.zip
-		URL_ACTUALIZACION=$URL_TROPICAL/oasis/lista_canales/astra/etc/enigma2/actualizacion
-		CARPETA=Canales-enigma2-main/Jungle-Astra-19.2/etc/enigma2
-		ZIP=Jungle-Astra-19.2.zip
-		;;
-	'astra-hotbird')
-		URL=$URL_TROPICAL/oasis/lista_canales/Jungle-Astra19.2-hotbird13.zip
-		URL_ACTUALIZACION=$URL_TROPICAL/oasis/lista_canales/astra-hotbird/etc/enigma2/actualizacion
-		CARPETA=Canales-enigma2-main/Jungle-Astra19.2-hotbird13/etc/enigma2
-		ZIP=Jungle-Astra19.2-hotbird13.zip
-		;;
-	'astra-comunitaria')
-		URL=$URL_TROPICAL/oasis/lista_canales/Jungle-Astra-19.2-comunitarias.zip
-		URL_ACTUALIZACION=$URL_TROPICAL/oasis/lista_canales/astra-comunitarias/etc/enigma2/actualizacion
-		CARPETA=Canales-enigma2-main/Jungle-Astra-19.2-comunitarias/etc/enigma2
-		ZIP=Jungle-Astra-19.2-comunitarias.zip
-		;;
-	'astra-hotbird-hispasat')
-		URL=$URL_TROPICAL/oasis/lista_canales/Jungle-Astra19.2-Hotbird13-Hispasat30.zip
-		URL_ACTUALIZACION=$URL_TROPICAL/oasis/lista_canales/astra-hotbird-hispasat/etc/enigma2/actualizacion
-		CARPETA=Canales-enigma2-main/Jungle-Astra19.2-Hotbird13-Hispasat30/etc/enigma2
-		ZIP=Jungle-Astra19.2-Hotbird13-Hispasat30.zip
-		;;
-	'astra-hispasat')
-		URL=$URL_TROPICAL/oasis/lista_canales/Jungle-Astra19.2-Hispasat30.zip
-		URL_ACTUALIZACION=$URL_TROPICAL/oasis/lista_canales/astra-hispasat/etc/enigma2/actualizacion
-		CARPETA=Canales-enigma2-main/Jungle-Astra19.2-Hispasat30/etc/enigma2
-		ZIP=Jungle-Astra19.2-Hispasat30.zip
-		;;
-	'*')
-		URL=$URL_TROPICAL/oasis/lista_canales/Jungle-Astra-19.2.zip
-		URL_ACTUALIZACION=$URL_TROPICAL/oasis/lista_canales/astra/etc/enigma2/actualizacion
-		CARPETA=Canales-enigma2-main/Jungle-Astra-19.2/etc/enigma2
-		ZIP=Jungle-Astra-19.2.zip
-		;;
-	esac
-
-	DESTINO=/etc/enigma2
-	DIR_TMP=/tmp
-
-	if [ -f $DESTINO/actualizacion ];
+	if [ "$LISTA" -eq 1 ];
 	then
-		FICHERO_ACTUALIZACION=$DESTINO/actualizacion
-		diff_actualizacion
-		if [ "${ACTUALIZACION}" == "YES" ];
+		case "$LISTACANALES" in
+		'astra')
+			URL=$URL_TROPICAL/oasis/lista_canales/Jungle-Astra-19.2.zip
+			URL_ACTUALIZACION=$URL_TROPICAL/oasis/lista_canales/astra/etc/enigma2/actualizacion
+			CARPETA=Canales-enigma2-main/Jungle-Astra-19.2/etc/enigma2
+			ZIP=Jungle-Astra-19.2.zip
+			;;
+		'astra-hotbird')
+			URL=$URL_TROPICAL/oasis/lista_canales/Jungle-Astra19.2-hotbird13.zip
+			URL_ACTUALIZACION=$URL_TROPICAL/oasis/lista_canales/astra-hotbird/etc/enigma2/actualizacion
+			CARPETA=Canales-enigma2-main/Jungle-Astra19.2-hotbird13/etc/enigma2
+			ZIP=Jungle-Astra19.2-hotbird13.zip
+			;;
+		'astra-comunitaria')
+			URL=$URL_TROPICAL/oasis/lista_canales/Jungle-Astra-19.2-comunitarias.zip
+			URL_ACTUALIZACION=$URL_TROPICAL/oasis/lista_canales/astra-comunitarias/etc/enigma2/actualizacion
+			CARPETA=Canales-enigma2-main/Jungle-Astra-19.2-comunitarias/etc/enigma2
+			ZIP=Jungle-Astra-19.2-comunitarias.zip
+			;;
+		'astra-hotbird-hispasat')
+			URL=$URL_TROPICAL/oasis/lista_canales/Jungle-Astra19.2-Hotbird13-Hispasat30.zip
+			URL_ACTUALIZACION=$URL_TROPICAL/oasis/lista_canales/astra-hotbird-hispasat/etc/enigma2/actualizacion
+			CARPETA=Canales-enigma2-main/Jungle-Astra19.2-Hotbird13-Hispasat30/etc/enigma2
+			ZIP=Jungle-Astra19.2-Hotbird13-Hispasat30.zip
+			;;
+		'astra-hispasat')
+			URL=$URL_TROPICAL/oasis/lista_canales/Jungle-Astra19.2-Hispasat30.zip
+			URL_ACTUALIZACION=$URL_TROPICAL/oasis/lista_canales/astra-hispasat/etc/enigma2/actualizacion
+			CARPETA=Canales-enigma2-main/Jungle-Astra19.2-Hispasat30/etc/enigma2
+			ZIP=Jungle-Astra19.2-Hispasat30.zip
+			;;
+		'*')
+			URL=$URL_TROPICAL/oasis/lista_canales/Jungle-Astra-19.2.zip
+			URL_ACTUALIZACION=$URL_TROPICAL/oasis/lista_canales/astra/etc/enigma2/actualizacion
+			CARPETA=Canales-enigma2-main/Jungle-Astra-19.2/etc/enigma2
+			ZIP=Jungle-Astra-19.2.zip
+			;;
+		esac
+
+		DESTINO=/etc/enigma2
+		DIR_TMP=/tmp
+		FECHA_ACTUALIZACION=${FECHA_LISTACANALES}
+		
+		if [ "${FECHA_ACTUALIZACION}" ];
 		then
+			diff_actualizacion
+			if [ "${ACTUALIZACION}" == "YES" ];
+			then
+				crear_dir_tmp
+				REINTENTOS=0
+				chequeo_internet
+				wget_zip $URL
+				descomprimir_zip
+				renombrar_carpeta
+				merge_lamedb
+				diferencias_canales
+				actualizar_fecha_listacanales
+			else
+				echo "No hay cambios en canales"
+			fi
+		else
+			echo "No existe fecha de actualizacion de canales, asi que fuerzo la actualizacion de canales"
 			crear_dir_tmp
 			REINTENTOS=0
 			chequeo_internet
@@ -592,19 +655,10 @@ actualizar_listacanales(){
 			renombrar_carpeta
 			merge_lamedb
 			diferencias_canales
-		else
-			echo "No hay cambios en canales"
+			actualizar_fecha_listacanales
 		fi
 	else
-		echo "No existe fichero de actualizacion de canales, asi que fuerzo la actualizacion de canales"
-		crear_dir_tmp
-		REINTENTOS=0
-		chequeo_internet
-		wget_zip $URL
-		descomprimir_zip
-		renombrar_carpeta
-		merge_lamedb
-		diferencias_canales
+		echo "La variable LISTA no es igual a 1, asi que no actualizo la lista de canales"
 	fi
 }
 
@@ -647,9 +701,9 @@ actualizar_picons(){
 		buscar_picons
 		if [ ! -z "${RUTA_PICONS}" ];
 		then
-			if [ -f "${RUTA_PICONS}/actualizacion" ];
+			FECHA_ACTUALIZACION=${FECHA_PICONS}
+			if [ "${FECHA_ACTUALIZACION}" ];
 			then
-				FICHERO_ACTUALIZACION=$RUTA_PICONS/actualizacion
 				diff_actualizacion
 				if [ "${ACTUALIZACION}" == "YES" ];
 				then
@@ -664,6 +718,7 @@ actualizar_picons(){
 						renombrar_carpeta
 						diferencias_picons
 						redimensionamiento_picons
+						actualizar_fecha_picons
 					else
 						echo "No hay espacio libre en /tmp o en en ${RUTA_PICONS} para descargar los picons. Hay que revisar"
 					fi
@@ -683,6 +738,7 @@ actualizar_picons(){
 					renombrar_carpeta
 					diferencias_picons
 					redimensionamiento_picons
+					actualizar_fecha_picons
 				else
 					echo "No hay espacio libre en /tmp o en en ${RUTA_PICONS} para descargar los picons. Hay que revisar"
 				fi
@@ -691,7 +747,7 @@ actualizar_picons(){
 			echo "No existe ninguna ruta con picons, asi que no actualizo"
 		fi
 	else
-		echo "Variable PICONS=0, asi que no actualizo los picons"
+		echo "La variable PICONS no es igual a 1, asi que no actualizo los picons"
 	fi
 }
 
@@ -749,7 +805,7 @@ actualizar_junglescript() {
 chequeo_internet() {
 	echo "Chequeando conectividad a Internet..."
 	URL_TEST="https://www.google.es/"
-	curl -sk ${URL_TEST} 2>/dev/null
+	curl -I ${URL_TEST} 2>/dev/null
 	salida=$?
 	if [ "$salida" -eq 0 ];
 	then
