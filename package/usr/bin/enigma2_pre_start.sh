@@ -1,10 +1,10 @@
 #!/bin/bash
 # Provides: jungle-team
 # Description: JungleScript para actualizaciones de lista de canales y de picons del equipo jungle-team
-# Version: 6.0
-# Date: 22/04/2023
+# Version: 6.1
+# Date: 07/12/2023
 
-VERSION=6.0
+VERSION=6.1
 LOGFILE=/var/log/enigma2_pre_start.log
 URL_TROPICAL=http://tropical.jungle-team.online
 exec 1> $LOGFILE 2>&1
@@ -139,7 +139,6 @@ borrado_canales() {
 				echo $BOUQUET_NAME >> $DIR_TMP/$EXCLUDE_FAV
 				echo -e $BOUQUET_NAME >> $DIR_TMP/excludes.txt
 			fi
-			rm -f $CARPETA/$FICHERO
 		done
 		ls $DESTINO/*.radio $DESTINO/lamedb $DESTINO/blacklist $DESTINO/whitelist $DESTINO/satellites.xml | xargs rm
 	else
@@ -184,7 +183,7 @@ diferencias_canales() {
 	rsync -aiv $DIR_TMP/$CARPETA/* $DESTINO --exclude-from=$DIR_TMP/excludes.txt --log-file=$DIR_TMP/$LOG_RSYNC_CANALES
 	FICH_SAT=satellites.xml
 	RUTA_SAT=/etc/tuxbox
-	LINEA=3
+	LINEA=$(cat $DIR_TMP/$CARPETA/bouquets.tv | wc -l)
 	rsync -aiv $DIR_TMP/$CARPETA/$FICH_SAT $RUTA_SAT/$FICH_SAT --log-file=$DIR_TMP/$LOG_RSYNC_CANALES
 	if [ -f $DIR_TMP/$EXCLUDE_FAV ];
 	then
@@ -291,16 +290,18 @@ buscar_picons() {
 diferencias_picons() {
 	LOG_RSYNC_PICONS=rsync_picons.log
 	buscar_picons
+	rm -f $RUTA_PICONS/actualizacion
 	rsync -aiv $DIR_TMP/$CARPETA/* $RUTA_PICONS --log-file=$DIR_TMP/$LOG_RSYNC_PICONS
     CAMBIOS_RSYNC_1=$(grep -i "f+++++++++" $DIR_TMP/$LOG_RSYNC_PICONS | wc -l)
 	CAMBIOS_RSYNC_2=$(grep -i "f.st......" $DIR_TMP/$LOG_RSYNC_PICONS | wc -l)
 	if [ "${CAMBIOS_RSYNC_1}" -gt 0 ] || [ "${CAMBIOS_RSYNC_2}" -gt 0 ];
 	then
 		MENSAJE="Actualizacion automatica realizada sobre los picons ${RUTA_PICONS}"
-		enviar_telegram "${MENSAJE}"
 		echo $MENSAJE
+		enviar_telegram "${MENSAJE}"
+		enviar_mensaje_pantalla "${MENSAJE}"
 	else
-		echo "No hay cambios en los picons"
+		echo "No hay cambios en los picons en la ruta ${RUTA_PICONS}"
 	fi
 }
 

@@ -1,5 +1,9 @@
 # Changelog
 
+## [6.1]
+- A la hora de insertar los bouquets guardados con BOUQUETS_NO_ACTUALIZAR, que lo haga siempre al final de la lista
+- Se fuerza que cuando haya update de picos siempre envíe el mensaje de telegram
+
 ## [6.0] - 22/04/2023
 - Añadidos parámetros en el archivo de configuración (LISTA, FECHA_LISTACANALES, FECHA_PICONS, BOUQUETS_NO_DESCARGAR, BOUQUETS_NO_ACTUALIZAR)
 

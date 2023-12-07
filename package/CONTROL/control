@@ -1,5 +1,5 @@
 Package: enigma2-plugin-extensions-junglescript
-Version: 6.0
+Version: 6.1
 Architecture: all
 Depends: bash,curl
 Maintainer: jungle-team
